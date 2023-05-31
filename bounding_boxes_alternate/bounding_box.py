@@ -8,6 +8,7 @@
 
 import cv2
 import pandas as pd
+import datetime as dt
 
 cap = cv2.VideoCapture(
     r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_30b\2022_30b\8bef8eba_0.0-63.584.mp4"
@@ -17,6 +18,8 @@ cap = cv2.VideoCapture(
 gaze = pd.read_csv(
     r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_30b\2022_30b\gaze.csv"
 )
+
+gaze["ts"] = gaze["timestamp [ns]"].apply(lambda x: dt.datetime.utcfromtimestamp(x))
 
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
