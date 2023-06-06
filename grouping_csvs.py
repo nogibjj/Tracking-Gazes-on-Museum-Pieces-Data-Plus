@@ -49,15 +49,35 @@ num_folders = len(participant_folders)
 
 # Concatenate all the tagged csvs into one big csv
 # after preprocessing their timestamps
+
+target_csv = pd.DataFrame()
+
+
 participant_count = 0
 for folder in participant_folders:
     files = os.listdir(os.path.join(participant_repository, folder))
 
     if "gaze.csv" in files:
         print(f"file found in Processing {folder}")
+        gaze_csv_path = os.path.join(participant_repository, folder, "gaze.csv")
+        # For now, we will keep the timestamp_corrector step
+        # It might be redundant, but it is a good sanity check
+        gaze_csv = timestamp_corrector(gaze_csv_path)
+        target_csv = pd.concat([target_csv, gaze_csv], axis=0)
         participant_count += 1
 
-    assert participant_count == len(num_folders)
+try:
+    assert participant_count == num_folders
 
-print(f"Number of participants found: {participant_count}")
-print(num_folders == participant_count)
+except AssertionError:
+    print(f"Number of participants found: {participant_count}")
+    print(f"Number of folders found: {num_folders}")
+    print(f"Participant count does not match number of folders")
+
+    with open("Error Log - Folder Count.txt", "w") as f:
+        f.write(f"Number of participants found: {participant_count}")
+        f.write(f"Number of folders found: {num_folders}")
+        f.write(f"Participant count does not match number of folders")
+
+target_csv.to_csv("all_gaze.csv", index=False, compression="gzip")
+print("all_gaze.csv created")

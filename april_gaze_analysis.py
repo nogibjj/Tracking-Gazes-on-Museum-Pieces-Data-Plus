@@ -5,7 +5,7 @@ import datetime as dt
 from auxiliary_analysis_functions import fake_tagger
 
 # Records most frequently looked at/returned to feature
-gaze_copy = pd.read_csv("gaze_fake_fix.csv")
+gaze_copy = pd.read_csv("all_gaze.csv", compression="gzip")
 
 
 gaze_copy = fake_tagger(gaze_copy)
