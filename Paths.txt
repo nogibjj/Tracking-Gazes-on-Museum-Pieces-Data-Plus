@@ -1,0 +1,5 @@
+
+INSTRUCTIONS
+
+
+PLACE YOUR PARTICIPANT PATH AFTER THE COLON : C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)

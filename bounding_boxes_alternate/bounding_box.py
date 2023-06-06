@@ -10,6 +10,7 @@ import cv2
 import pandas as pd
 import datetime as dt
 
+print("we are looking at the tv")
 # path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_30b\2022_30b\8bef8eba_0.0-63.584.mp4"
 path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_03bm\2022_03bm\2e6f4a06_0.0-65.563.mp4"
 # path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_39bm\2022_39bm\98b876d7_0.0-61.188.mp4"
@@ -26,7 +27,7 @@ gaze["ts"] = gaze["timestamp [ns]"].apply(
 )
 baseline = gaze["ts"][0]
 gaze["increment_marker"] = gaze["ts"] - baseline
-gaze["seconds_id"] = gaze["increment_marker"].apply(lambda x: x.seconds) + 1
+gaze["seconds_id"] = gaze["increment_marker"].apply(lambda x: x.seconds)
 gaze_grouped_by_seconds = gaze.groupby("seconds_id")[
     ["gaze x [px]", "gaze y [px]"]
 ].mean()
@@ -41,11 +42,17 @@ writer = cv2.VideoWriter("output.mp4", fourcc, fps, (frame_width, frame_height))
 
 i = 1
 frame_counter = 0
+end_flag = True
+end_time = None
+timestamp_list = []
 while True:
     # `success` is a boolean and `frame` contains the next video frame
     success, frame = cap.read()
     print(f"the previous frame is {i}, success is {success}")
     if success:
+        timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+        print(f"the timestamp is {timestamp/1000}")
+        timestamp_list.extend(([timestamp / 1000]))
         frame_counter += 1
         if frame_counter > 30:
             i += 1  # moving the group by one increment
@@ -67,6 +74,7 @@ while True:
         cv2.rectangle(frame, (x - 30, y - 30), (x + 30, y + 30), (0, 255, 0), 1)
         writer.write(frame)
         cv2.imshow("output", frame)
+        cv2.imwrite(f"frame_{i}.jpg", frame)
         print(f"passed {i}")
         i += 1
         if cv2.waitKey(1) & 0xFF == ord("s"):
