@@ -74,6 +74,7 @@ while True:
         cv2.rectangle(frame, (x - 30, y - 30), (x + 30, y + 30), (0, 255, 0), 1)
         writer.write(frame)
         cv2.imshow("output", frame)
+        cv2.imwrite(f"frame_{i}.jpg", frame)
         print(f"passed {i}")
         i += 1
         if cv2.waitKey(1) & 0xFF == ord("s"):
