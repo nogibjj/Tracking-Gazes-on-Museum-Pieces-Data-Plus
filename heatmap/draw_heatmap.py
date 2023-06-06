@@ -1,103 +1,68 @@
-import cv2
-import pandas as pd
-import numpy as np
-import datetime
-import numpy as np
-from matplotlib import pyplot as plt
-from collections import defaultdict
-from sklearn.preprocessing import normalize
-from pprint import pprint
-import matplotlib
-from matplotlib import cm
+"""
+Author: Aditya John (aj391)
+This is a script that ingests a csv of gazes (when looking at an object) and outputs a final image with a heatmap across the various pixels of interest. 
+It also updates the gaze.csv file with new 'gaze' pixel locations that correspond to the reference image instead of the actual video. 
 
-# Todo: Add loop to this
+# ToDo:
+- Add smoothing to the video file [pixel closeness? frame combination?]
+- Figure out how to skip the first few grey frames in the video [skip frame if % of greyness > thresh?]
+- Change opacity of the bounding boxes? 
+Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-boxes-cv2-rectangle
+- QC the outputs - April?
+"""
+from collections import defaultdict
+import pandas as pd
+import cv2
+from functions import convert_timestamp_ns_to_ms, get_closest_individual_gaze_object, get_closest_reference_pixel, normalize_heatmap_dict, draw_heatmap_on_ref_img, create_output_directory
+
+# Declare constant variables
+pixel_heatmap = defaultdict(int)
+frame_no = 0
+skip_first_n_frames = 25 
+run_for_frames = 100 # Too low a value will cause a division by zero error
+bounding_size = 25
+
+# Todo: Add loop to read multiple files
 csv_file = '/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/2022_30b/2022_30b/gaze.csv'
 video_file = '/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/2022_30b/2022_30b/8bef8eba_0.0-63.584.mp4'
+
 gaze_csv = pd.read_csv(csv_file)
-
-gaze_csv['timestamp [ns]'] = pd.to_datetime(gaze_csv['timestamp [ns]'])
-start_timestamp = gaze_csv['timestamp [ns]'][0]
-gaze_csv['timestamp [ns]'] = (gaze_csv['timestamp [ns]'] - start_timestamp)
-gaze_csv['timestamp [ns]'] = gaze_csv['timestamp [ns]'].astype(np.int64) / int(1e6)
-
+gaze_csv = convert_timestamp_ns_to_ms(gaze_csv)
+updated_gaze = pd.DataFrame()
 cap = cv2.VideoCapture(video_file)
-frame_exists, curr_frame = cap.read()
-height,width,layers=curr_frame.shape
 
-# fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-# fps = 1
-# video = cv2.VideoWriter('video.avi', fourcc, fps, (width, height))
-
-frame_no = 0
-skip_first_n_frames = 25
-run_for_frames = 1500
-first_frame = ""
-size = 25
-pixel_heatmap = defaultdict(int)
-
-# def get_cropped_gaze_img():
-
+create_output_directory()
 while(cap.isOpened()):
+    if frame_no % 1000 == 0:
+        print(f'Processed {frame_no} frames')
     frame_no += 1
     frame_exists, curr_frame = cap.read()
+
     if frame_no < skip_first_n_frames:
         continue
 
-    if frame_no > skip_first_n_frames + run_for_frames:
-        break
+    ##### Uncomment below if early stopping is required
+    # if frame_no > skip_first_n_frames + run_for_frames:
+    #    break
     
-    if frame_no == skip_first_n_frames and frame_exists:
+    elif frame_no == skip_first_n_frames and frame_exists:
         first_frame = curr_frame
+        cv2.imwrite('output/reference_image.png', first_frame)
 
-    if frame_exists:
-
-        current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
-        closet_value = min(gaze_csv['timestamp [ns]'], key=lambda x:abs(x-current_timestamp))
-        closest_row = gaze_csv[gaze_csv['timestamp [ns]'] == closet_value].reset_index()
-        x_pixel = round(closest_row['gaze x [px]'][0])
-        y_pixel = round(closest_row['gaze x [px]'][0])
-        template = curr_frame[y_pixel:y_pixel+size, x_pixel:x_pixel+size]
+    elif frame_exists:
+        gaze_object_crop, closest_row = get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
+        closest_ref_pixel = get_closest_reference_pixel(first_frame, gaze_object_crop)
+        closest_row['ref_x_pixel'] = closest_ref_pixel[0]
+        closest_row['ref_y_pixel'] = closest_ref_pixel[1]
+        updated_gaze = pd.concat([updated_gaze, closest_row])
+        pixel_heatmap[closest_ref_pixel] += 1
 
     else:
         break
-
-    frame_no += 1
     
-    # template.shape[0] is 3 (because the picture is RGB)
-    
-    chosen_method = 1
-    methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
-            'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
+final_img = draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size)
 
-    method = eval(methods[chosen_method])
-    res = cv2.matchTemplate(first_frame, template, method)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
-    # if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-    #     top_left = min_loc
-    # else:
-    #     top_left = max_loc
-    top_left = max_loc
-    pixel_heatmap[top_left] += 1
-
-"""
-Normalize heatmap
-"""
-pprint(pixel_heatmap)
-values = list(pixel_heatmap.values())
-norm = matplotlib.colors.Normalize(vmin=min(values), vmax=max(values), clip=True)
-mapper = cm.ScalarMappable(norm=norm, cmap=cm.Greys_r)
-rgba_colors = mapper.to_rgba(values)
-pixel_heatmap = {key: tuple(np.array(color[:3]) * 255) for key, color in zip(pixel_heatmap.keys(), rgba_colors)}
-pprint(pixel_heatmap)
-
-for key, value in pixel_heatmap.items():
-
-    bottom_right = (key[0] + size, key[1] + size)
-    op_frame = cv2.rectangle(first_frame, key, bottom_right, value, 2)
-
-
-cv2.imwrite('output.png', op_frame)
+cv2.imwrite('output/heatmap_output.png', final_img)
+updated_gaze.to_csv('output/updated_gaze.csv', index=False)
 cap.release()
-# video.release()
-
