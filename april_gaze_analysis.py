@@ -17,4 +17,4 @@ gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
 )
 baseline = gaze_copy["ts"][0]
 gaze_copy["increment_marker"] = gaze_copy["ts"] - baseline
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds) + 1
+gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)

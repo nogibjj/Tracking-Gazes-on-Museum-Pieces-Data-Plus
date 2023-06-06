@@ -12,12 +12,12 @@ import datetime as dt
 
 print("we are looking at the tv")
 # path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_30b\2022_30b\8bef8eba_0.0-63.584.mp4"
-# path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_03bm\2022_03bm\2e6f4a06_0.0-65.563.mp4"
-path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_39bm\2022_39bm\98b876d7_0.0-61.188.mp4"
+path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_03bm\2022_03bm\2e6f4a06_0.0-65.563.mp4"
+# path_0 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_39bm\2022_39bm\98b876d7_0.0-61.188.mp4"
 
 # path_1 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_30b\2022_30b\gaze.csv"
-# path_1 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_03bm\2022_03bm\gaze.csv"
-path_1 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_39bm\2022_39bm\gaze.csv"
+path_1 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_03bm\2022_03bm\gaze.csv"
+# path_1 = r"C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\2022_39bm\2022_39bm\gaze.csv"
 
 cap = cv2.VideoCapture(path_0)
 gaze = pd.read_csv(path_1)
@@ -27,7 +27,7 @@ gaze["ts"] = gaze["timestamp [ns]"].apply(
 )
 baseline = gaze["ts"][0]
 gaze["increment_marker"] = gaze["ts"] - baseline
-gaze["seconds_id"] = gaze["increment_marker"].apply(lambda x: x.seconds) + 1
+gaze["seconds_id"] = gaze["increment_marker"].apply(lambda x: x.seconds)
 gaze_grouped_by_seconds = gaze.groupby("seconds_id")[
     ["gaze x [px]", "gaze y [px]"]
 ].mean()
