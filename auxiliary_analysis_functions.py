@@ -5,7 +5,8 @@ to avoid bloating the analysis script."""
 # fake tag creator
 def fake_tagger(gaze_dataframe):
     """Create fake placeholder
-    tags for analyses purposes
+    tags for analyses purposes,
+    Will be defunct once real tags are created
     """
     import numpy as np
 
