@@ -70,5 +70,3 @@ coordinates_df = pd.DataFrame(
 print(coordinates_df)
 
 coordinates_df.to_csv("tags.csv", index=False)
-
-pd.read_csv("tags.csv")
