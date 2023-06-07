@@ -64,8 +64,38 @@ def normalize_heatmap_dict(pixel_heatmap, new_min=0, new_max=255):
         pixel_heatmap[key] = color
 
 def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size):
+
     """
     Function to draw the heatmap on the reference image based on the pixel locations
+    """
+    overlay = first_frame.copy()
+    ### Translucent small circle bounding box
+    for key, value in pixel_heatmap.items():
+        bottom_right = (key[0] + bounding_size, key[1] + bounding_size)
+        value = abs(255-value)
+        color = (value, value, 255)
+        op_frame = cv2.circle(first_frame, key, 3, color, -1)
+        alpha = 0.4  # Transparency factor.
+        op_frame = cv2.addWeighted(overlay, alpha, op_frame, 1 - alpha, 0)
+    return op_frame
+    
+  
+    # Following line overlays transparent rectangle
+    # over the image
+    image_new = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+
+
+    ### Small circle bounding box
+    """
+    for key, value in pixel_heatmap.items():
+        bottom_right = (key[0] + bounding_size, key[1] + bounding_size)
+        value = abs(255-value)
+        color = (value, value, 255)
+        op_frame = cv2.circle(first_frame, key, 3, color, 2)
+    return op_frame
+    """
+
+    ### Rectangle bounding box version
     """
     for key, value in pixel_heatmap.items():
         bottom_right = (key[0] + bounding_size, key[1] + bounding_size)
@@ -73,7 +103,7 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size):
         color = (value, value, 255)
         op_frame = cv2.rectangle(first_frame, key, bottom_right, color, 2) 
     return op_frame
-
+    """
 def create_output_directory():
     if not os.path.exists('./output'):
         os.makedirs('./output')
