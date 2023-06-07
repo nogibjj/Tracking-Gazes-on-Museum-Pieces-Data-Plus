@@ -48,7 +48,7 @@ def get_closest_reference_pixel(first_frame, template, method=1):
         top_left = max_loc
     return top_left
 
-def normalize_heatmap_dict(pixel_heatmap, new_min=0, new_max=255):
+def normalize_heatmap_dict(pixel_heatmap, new_min=0, new_max=1):
     """
     Function to normalize the heatmap dictionary counts between the given range
     """
@@ -72,10 +72,10 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size):
     ### Translucent small circle bounding box
     for key, value in pixel_heatmap.items():
         bottom_right = (key[0] + bounding_size, key[1] + bounding_size)
-        value = abs(255-value)
-        color = (value, value, 255)
+        #value = abs(255-value)
+        color = (255, 255, 255)
         op_frame = cv2.circle(first_frame, key, 3, color, -1)
-        alpha = 0.4  # Transparency factor.
+        alpha = 1-value  # Transparency factor.
         op_frame = cv2.addWeighted(overlay, alpha, op_frame, 1 - alpha, 0)
     return op_frame
     
