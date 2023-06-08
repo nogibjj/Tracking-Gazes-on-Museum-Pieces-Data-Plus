@@ -28,13 +28,17 @@ def timestamp_corrector(gaze_csv_path):
 
 
 participant_repository = None
+name_of_art_piece = None
 
 with open("Paths.txt", "r") as f:
     for line in f.readlines():
-        if "AFTER THE COLON" in line:
+        if "AFTER THE COLON" in line and "PARTICIPANT" in line:
             participant_repository = line.split(":", maxsplit=1)[1].strip()
 
             print(f"participant_repository is {participant_repository}")
+
+        elif "AFTER THE COLON" in line and "ART PIECE" in line:
+            name_of_art_piece = line.split(":", maxsplit=1)[1].strip()
 
             break
 
@@ -59,12 +63,16 @@ for folder in participant_folders:
 
     if "gaze.csv" in files:
         print(f"file found in Processing {folder}")
+        participant_count += 1
         gaze_csv_path = os.path.join(participant_repository, folder, "gaze.csv")
         # For now, we will keep the timestamp_corrector step
         # It might be redundant, but it is a good sanity check
         gaze_csv = timestamp_corrector(gaze_csv_path)
+        gaze_csv["participant_folder"] = folder
+        gaze_csv["art_piece"] = name_of_art_piece
+        gaze_csv["participant_id"] = participant_count
         target_csv = pd.concat([target_csv, gaze_csv], axis=0)
-        participant_count += 1
+
 
 try:
     assert participant_count == num_folders
