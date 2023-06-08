@@ -2,6 +2,7 @@
 
 import pandas as pd
 import datetime as dt
+import numpy as np
 from auxiliary_analysis_functions import fake_tagger
 
 
@@ -11,6 +12,8 @@ def modify(df):
     baseline = df["ts"][0]
     df["increment_marker"] = df["ts"] - baseline
     df["next time"] = df["ts"].shift(-1)
+    df["next x"] = df["gaze x [px]"].shift(-1)
+    df["next y"] = df["gaze y [px]"].shift(-1)
     df = df[:-1].copy()
     return df
 
@@ -34,6 +37,7 @@ gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.second
 gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
 gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
+gaze_copy.drop("duration(micro)", axis=1)
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 total_time = gaze_copy["duration(s)"].sum()
 percent_time = (feature_time / total_time) * 100
@@ -63,3 +67,15 @@ streak_tag = pd.merge(
 )
 streak_tag.rename(columns={0: "duration(s)"}, inplace=True)
 streak_tag["duration(s)"] = streak_tag["duration(s)"].dt.microseconds / 1000000
+streak_tag.set_index("tag")
+
+# Determines max streak by feature
+max_streak = streak_tag.groupby("tag").max()
+
+# Records amplitude of saccades by feature
+gaze_copy["saccade time(s)"] = gaze_copy["duration(s)"]
+gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
+gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
+gaze_copy["saccade distance"] = np.sqrt(
+    (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
+)
