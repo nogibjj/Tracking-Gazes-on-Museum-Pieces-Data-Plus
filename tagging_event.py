@@ -27,7 +27,27 @@ def drawfunction(event, x, y, flags, param):
             color=(0, 255, 0),
             thickness=3,
         )
-        feature_coordinates.extend([[name, x1, y1, x, y]])
+        x2 = x
+        y2 = y
+        # left upper corner is (x1, y1)
+        # right lower corner is (x, y)
+        if x1 < x2 and y1 > y2:
+            feature_coordinates.extend([[name, x1, y1, x2, y2, x1, y2, x2, y1]])
+
+        # first coordinate is the lower right corner
+        # second coordinate is the upper left corner
+        elif x1 > x2 and y1 < y2:
+            feature_coordinates.extend([[name, x2, y2, x1, y1, x2, y1, x1, y2]])
+
+        # first coordinate is the lower left corner
+        # second coordinate is the upper right corner
+        elif x1 < x2 and y1 < y2:
+            feature_coordinates.extend([[name, x1, y2, x2, y1, x1, y1, x2, y2]])
+
+        # first coordinate is the upper right corner
+        # second coordinate is the lower left corner
+        elif x1 > x2 and y1 > y2:
+            feature_coordinates.extend([[name, x2, y1, x1, y2, x2, y2, x1, y1]])
 
 
 # base_img = cv2.imread("test2 image prompter.png")
@@ -62,9 +82,14 @@ while flag:
 
 cv2.destroyAllWindows()
 
-
+# For the final dataframe
+# x1 and y1 correspond to the upper left corner
+# x2 and y2 correspond to the lower right corner
+# x3 and y3 correspond to the lower left corner
+# x4 and y4 correspond to the upper right corner
 coordinates_df = pd.DataFrame(
-    feature_coordinates, columns=["name", "x1", "y1", "x2", "y2"]
+    feature_coordinates,
+    columns=["name", "x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4"],
 )
 
 print(coordinates_df)
