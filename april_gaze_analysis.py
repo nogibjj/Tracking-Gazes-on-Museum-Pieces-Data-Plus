@@ -79,3 +79,13 @@ gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
 gaze_copy["saccade distance"] = np.sqrt(
     (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
 )
+
+# Direction of saccades
+gaze_copy["direction x"] = gaze_copy["change x"].apply(
+    lambda x: "east" if x > 0 else "west"
+)
+gaze_copy["direction y"] = gaze_copy["change y"].apply(
+    lambda y: "north" if y > 0 else "south"
+)
+gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
+gaze_copy.drop(["direction x", "direction y"], axis=1)
