@@ -17,7 +17,7 @@ def drawfunction(event, x, y, flags, param):
     elif event == cv2.EVENT_RBUTTONDBLCLK or event == cv2.EVENT_RBUTTONDOWN:
         drawing = False
         cv2.rectangle(img, (x1, y1), (x, y), (0, 255, 0), 3)
-        name = input("What is the name of the feature you are interested in?   ")
+        name = input("What is the name of the feature you want to tag?   ")
         cv2.putText(
             img=img,
             text=name,
@@ -66,7 +66,8 @@ def drawfunction(event, x, y, flags, param):
 
 # base_img = cv2.imread("test2 image prompter.png")
 # base_img = cv2.imread("test3 image prompter.jpg")
-base_img = cv2.imread("test5 image prompter.jpg")
+# base_img = cv2.imread("test5 image prompter.jpg")
+base_img = cv2.imread("test6 image prompter.jpg")
 # base_img = cv2.imread("test4 image prompter.jpg")
 # img = cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)
 img = base_img
