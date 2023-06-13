@@ -3,6 +3,7 @@
 import pandas as pd
 import datetime as dt
 import numpy as np
+import matplotlib.pyplot as plt
 from auxiliary_analysis_functions import fake_tagger
 
 
@@ -18,7 +19,7 @@ def modify(df):
     return df
 
 
-# Records most frequently looked at/returned to feature
+# Most frequently looked at/returned to feature
 all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
 all_gaze = fake_tagger(all_gaze)
@@ -31,9 +32,15 @@ def participant_folder_corrector(input_string):
     """Add a 0 after the underscore in participant_folder"""
     import re
 
-    target_for_replacement = re.findall(pattern="\d+(_\d+).*", string=input_string)[0]
+    try:
+        target_for_replacement = re.findall(pattern="\d+(_\d+).*", string=input_string)[
+            0
+        ]
 
-    if len(target_for_replacement) >= 2:
+    except:
+        return input_string
+
+    if len(target_for_replacement) >= 3:
         return input_string
 
     else:
@@ -41,6 +48,14 @@ def participant_folder_corrector(input_string):
 
 
 demographic = pd.read_excel("demographic.xlsx")
+demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].fillna("none")
+demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].apply(
+    lambda x: participant_folder_corrector(x)
+)
+all_gaze["codice_eyetr_museo"] = all_gaze["participant_folder"].apply(
+    lambda x: participant_folder_corrector(x)
+)
+
 gaze_copy = pd.merge(
     all_gaze,
     demographic[
@@ -57,11 +72,13 @@ gaze_copy = pd.merge(
     how="left",
 )
 
-# Records percent time spent on each feature
+gaze_copy = gaze_copy.iloc[:, :-1]
+
+# Percent time spent on each feature
 gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
-gaze_copy = gaze_copy.groupby(["section id"]).apply(modify)
+gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
 gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
 # Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
@@ -73,12 +90,29 @@ feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 total_time = gaze_copy["duration(s)"].sum()
 percent_time = (feature_time / total_time) * 100
 
-# Records mean duration of looking at each feature
+# Percent time spent on each feature in women
+gaze_f = gaze_copy[gaze_copy["sesso"] == "f"]
+feature_f = gaze_f.groupby("tag")["duration(s)"].sum()
+total_f = gaze_f["duration(s)"].sum()
+percent_f = (feature_f / total_f) * 100
+
+# Percent time spent on each feature in men
+gaze_m = gaze_copy[gaze_copy["sesso"] == "m"]
+feature_m = gaze_m.groupby("tag")["duration(s)"].sum()
+total_m = gaze_m["duration(s)"].sum()
+percent_m = (feature_m / total_m) * 100
+
+# Mean fixation duration of looking at each feature
 feature_freq = gaze_copy["tag"].value_counts()
 features = pd.concat([feature_time, feature_freq], axis=1)
-features["mean duration"] = features["duration(s)"] / features["count"]
+features["mean fix duration(s)"] = features["duration(s)"] / features["count"]
 
-# Records individual streak durations for each feature
+# Mean duration of looking at each feature
+features["mean duration(s)"] = (
+    features["duration(s)"] / gaze_copy["participant_folder"].nunique()
+)
+
+# Individual streak durations for each feature
 gaze_copy["start of streak"] = gaze_copy["tag"].ne(gaze_copy["tag"].shift())
 gaze_copy["streak id"] = gaze_copy["start of streak"].cumsum()
 gaze_copy["streak count"] = gaze_copy.groupby("streak id").cumcount() + 1
@@ -100,8 +134,11 @@ streak_tag.rename(columns={0: "duration(s)"}, inplace=True)
 streak_tag["duration(s)"] = streak_tag["duration(s)"].dt.microseconds / 1000000
 streak_tag.set_index("tag")
 
-# Determines max streak by feature
+# Max streak by feature
 max_streak = streak_tag.groupby("tag").max()
+
+# Mean streak by feature
+mean_streak = streak_tag.groupby("tag").mean()
 
 # Records amplitude of saccades by feature
 gaze_copy["saccade time(s)"] = gaze_copy["duration(s)"]
@@ -120,3 +157,43 @@ gaze_copy["direction y"] = gaze_copy["change y"].apply(
 )
 gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
 gaze_copy.drop(["direction x", "direction y"], axis=1)
+
+# Total % time spent on each feature plotted (all)
+percent_time = percent_time.to_frame()
+percent_time = percent_time.reset_index()
+percent_time.columns = ["tag", "% time"]
+plt.bar(percent_time["tag"], percent_time["% time"])
+plt.xlabel("Feature")
+plt.ylabel("% Time Spent Looking")
+plt.title("% Time Spent Looking at Each Feature (All Participants)")
+
+# Mean streak duration for each feature plotted (all)
+mean_streak = mean_streak.reset_index()
+plt.bar(mean_streak["tag"], mean_streak["duration(s)"])
+plt.xlabel("Feature")
+plt.ylabel("Duration(s)")
+plt.title("Mean Streak Duration by Feature (All Participants)")
+
+# Mean duration spent looking at each feature plotted (all)
+features = features.reset_index()
+plt.bar(features["tag"], features["mean duration(s)"])
+plt.xlabel("Feature")
+plt.ylabel("Duration(s)")
+plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
+
+# Percent time spent on each feature in men vs. women plotted
+percent_f = percent_f.to_frame()
+percent_f = percent_f.reset_index()
+percent_f.columns = ["tag", "Women"]
+percent_m = percent_m.to_frame()
+percent_m = percent_m.reset_index()
+percent_m.columns = ["tag", "Men"]
+percent_fvm = pd.merge(percent_m, percent_f, on="tag")
+percent_fvm.plot(
+    x="tag",
+    y=["Men", "Women"],
+    kind="bar",
+    title="% Time Spent Looking at Each Feature in Men vs. Women",
+    xlabel="Feature",
+    ylabel="% Time Spent",
+)
