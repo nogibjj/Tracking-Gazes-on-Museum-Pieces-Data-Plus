@@ -7,13 +7,14 @@ import cv2
 import pandas as pd
 import numpy as np
 
-def convert_timestamp_ns_to_ms(gaze_df, col_name='timestamp [ns]'):
+def convert_timestamp_ns_to_ms(gaze_df, col_name='timestamp [ns]', subtract=False):
     """
     Simple function to convert the ns linux timestamp datetype to normal milliseconds of elapsed time
     """
     gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
     start_timestamp = gaze_df[col_name][0]
-    gaze_df[col_name] = (gaze_df[col_name] - start_timestamp)
+    if subtract:
+        gaze_df[col_name] = (gaze_df[col_name] - start_timestamp)
     gaze_df[col_name] = gaze_df[col_name].astype(np.int64) / int(1e6)
     return gaze_df
 
@@ -23,6 +24,7 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     Draws a bounding box of the specified size around that specific pixel location and returns the bounding box as a cropped image. 
     """
     current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+    print(current_timestamp)
     closet_value = min(gaze_csv['timestamp [ns]'], key=lambda x:abs(x-current_timestamp))
     closest_row = pd.DataFrame(gaze_csv[gaze_csv['timestamp [ns]'] == closet_value].reset_index())
     x_pixel = round(closest_row['gaze x [px]'][0])
@@ -68,6 +70,7 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size):
     """
     Function to draw the heatmap on the reference image based on the pixel locations
     """
+    """ #### Not working
     overlay = first_frame.copy()
     ### Translucent small circle bounding box
     for key, value in pixel_heatmap.items():
@@ -78,22 +81,17 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size):
         alpha = 1-value  # Transparency factor.
         op_frame = cv2.addWeighted(overlay, alpha, op_frame, 1 - alpha, 0)
     return op_frame
-    
-  
-    # Following line overlays transparent rectangle
-    # over the image
-    image_new = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+    """
 
 
     ### Small circle bounding box
-    """
     for key, value in pixel_heatmap.items():
         bottom_right = (key[0] + bounding_size, key[1] + bounding_size)
         value = abs(255-value)
         color = (value, value, 255)
         op_frame = cv2.circle(first_frame, key, 3, color, 2)
     return op_frame
-    """
+    
 
     ### Rectangle bounding box version
     """
