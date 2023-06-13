@@ -19,12 +19,29 @@ def modify(df):
 
 
 # Records most frequently looked at/returned to feature
-gaze_copy = pd.read_csv("all_gaze.csv", compression="gzip")
+all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
-gaze_copy = fake_tagger(gaze_copy)
-gaze_copy.reset_index(drop=True, inplace=True)
-mode = gaze_copy["tag"].mode()
+all_gaze = fake_tagger(all_gaze)
+all_gaze.reset_index(drop=True, inplace=True)
+mode = all_gaze["tag"].mode()
 print(mode)
+
+demographic = pd.read_excel("demographic.xlsx")
+gaze_copy = pd.merge(
+    all_gaze,
+    demographic[
+        [
+            "School or degree course",
+            "Age",
+            "Educational Qualification",
+            "sesso",
+            "codice_eyetr_museo",
+        ]
+    ],
+    left_on="participant_folder",
+    right_on="codice_eyetr_museo",
+    how="left",
+)
 
 # Records percent time spent on each feature
 gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
