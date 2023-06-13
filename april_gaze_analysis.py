@@ -181,7 +181,7 @@ plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
 plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
 
-# Percent time spent on each feature in men vs. women
+# Percent time spent on each feature in men vs. women plotted
 percent_f = percent_f.to_frame()
 percent_f = percent_f.reset_index()
 percent_f.columns = ["tag", "Women"]
