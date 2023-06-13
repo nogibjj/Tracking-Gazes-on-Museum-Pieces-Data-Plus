@@ -26,6 +26,20 @@ all_gaze.reset_index(drop=True, inplace=True)
 mode = all_gaze["tag"].mode()
 print(mode)
 
+
+def participant_folder_corrector(input_string):
+    """Add a 0 after the underscore in participant_folder"""
+    import re
+
+    target_for_replacement = re.findall(pattern="\d+(_\d+).*", string=input_string)[0]
+
+    if len(target_for_replacement) >= 2:
+        return input_string
+
+    else:
+        return input_string.replace("_", "_0")
+
+
 demographic = pd.read_excel("demographic.xlsx")
 gaze_copy = pd.merge(
     all_gaze,
