@@ -12,8 +12,9 @@ user_tag_coordinates = pd.read_csv("tags.csv")
 # or a participant reference image
 # is received, this code should work agnostically
 
-
-participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
+# test
+# participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
+participant_reference_gaze_csv = pd.read_csv("gaze_csv_tag_exp_sb.csv")
 
 
 def ref_coordinate_processing(gaze_reference_df):
@@ -21,9 +22,13 @@ def ref_coordinate_processing(gaze_reference_df):
         zip(gaze_reference_df["ref_x_pixel"], gaze_reference_df["ref_y_pixel"])
     )
 
-    x_coordinates_from_tuple = [i[0] for i in gaze_reference_df["zip"].values.tolist()]
+    x_coordinates_from_tuple = [
+        i[0] for i in gaze_reference_df["ref_coordinates"].values.tolist()
+    ]
 
-    y_coordinates_from_tuple = [i[1] for i in gaze_reference_df["zip"].values.tolist()]
+    y_coordinates_from_tuple = [
+        i[1] for i in gaze_reference_df["ref_coordinates"].values.tolist()
+    ]
 
     assert gaze_reference_df["ref_x_pixel"].values.tolist() == x_coordinates_from_tuple
 
@@ -45,7 +50,7 @@ def coordinate_parser(tuple_string):
 
     # remove the parentheses
 
-    parsed_tuple = re.findall(pattern="\((\d+),(\d+)\)", string=tuple_string)[0]
+    parsed_tuple = re.findall(pattern="\((\d+), (\d+)\)", string=tuple_string)[0]
 
     formatted_tuple = [int(i) for i in parsed_tuple]
 
@@ -53,17 +58,21 @@ def coordinate_parser(tuple_string):
 
 
 def gaze_tagger(gaze_reference_df_obs, tags_df):
-    tag_list_from_df = user_tag_coordinates.values.tolist()
+    """Tag the observation gaze with the feature"""
+
+    # tag_list_from_df = user_tag_coordinates.values.tolist()
 
     # observation from that updated gaze csv
     # obtained and parsed from ref_coordinates
 
-    obs_x = gaze_reference_df_obs["ref_coordinates"][0]
-    obs_y = gaze_reference_df_obs["ref_coordinates"][1]
+    # obs_x = gaze_reference_df_obs["ref_coordinates"][0]
+    # obs_y = gaze_reference_df_obs["ref_coordinates"][1]
+    # print(gaze_reference_df_obs, gaze_reference_df_obs[0])
+    obs_x, obs_y = gaze_reference_df_obs[0], gaze_reference_df_obs[1]
 
     # extracting the features for the following loop operation
 
-    features = [i for i in user_tag_coordinates["name"].unique()]
+    features = [i for i in tags_df["name"].unique()]
 
     name = "noise"
 
@@ -124,7 +133,16 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                 # if the observation gaze is within the bounds
                 # of two or more rectangles, the one with the
                 # smallest center is chosen
-
+                print("current gaze", obs_x, obs_y)
+                print("current name : ", name)
+                print("current center : ", smallest_center_x, smallest_center_y)
+                print("current distance : ", distance_from_center)
+                print("competing name : ", feature)
+                print("competing center : ", center_x, center_y)
+                print(
+                    "competing distance : ",
+                    math.dist((obs_x, obs_y), (center_x, center_y)),
+                )
                 if (
                     math.dist((obs_x, obs_y), (center_x, center_y))
                     < distance_from_center
@@ -134,6 +152,9 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                     smallest_center_x, smallest_center_y = copy.deepcopy(
                         center_x
                     ), copy.deepcopy(center_y)
+
+                    print("new name : ", name)
+                    print("new center : ", smallest_center_x, smallest_center_y)
 
             else:
                 name = copy.deepcopy(feature)
@@ -154,6 +175,6 @@ participant_reference_gaze_csv = ref_coordinate_processing(
 )
 
 
-participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv.apply(
-    lambda x: gaze_tagger(x, user_tag_coordinates), axis=1
-)
+participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
+    "ref_coordinates"
+].apply(lambda x: gaze_tagger(x, user_tag_coordinates))

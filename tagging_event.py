@@ -67,7 +67,8 @@ def drawfunction(event, x, y, flags, param):
 # base_img = cv2.imread("test2 image prompter.png")
 # base_img = cv2.imread("test3 image prompter.jpg")
 # base_img = cv2.imread("test5 image prompter.jpg")
-base_img = cv2.imread("test6 image prompter.jpg")
+# base_img = cv2.imread("test6 image prompter.jpg")
+base_img = cv2.imread("test7 image prompter.jpg")
 # base_img = cv2.imread("test4 image prompter.jpg")
 # img = cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)
 img = base_img
