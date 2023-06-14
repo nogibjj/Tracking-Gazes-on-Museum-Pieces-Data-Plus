@@ -3,7 +3,8 @@
 import pandas as pd
 import os
 import datetime as dt
-
+import glob
+import subprocess
 
 def timestamp_corrector(gaze_csv_path):
     """Process the unix timestamps
@@ -59,7 +60,16 @@ target_csv = pd.DataFrame()
 
 participant_count = 0
 for folder in participant_folders:
+    
     files = os.listdir(os.path.join(participant_repository, folder))
+
+    video_file = os.path.join(participant_repository, folder, "*.mp4")
+    video_file = glob.glob(video_file) # [0]
+
+    if len(video_file) >= 1:
+
+        subprocess.Popen("python single_heatmap.py r'C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\tags-cb.csv' r'C:\Users\ericr\Desktop\Data + Plus\Tracking-Gazes-on-Museum-Pieces-Data-Plus\sbtags.csv'",shell=True)
+
 
     if "gaze.csv" in files:
         print(f"file found in Processing {folder}")
@@ -72,6 +82,10 @@ for folder in participant_folders:
         gaze_csv["art_piece"] = name_of_art_piece
         gaze_csv["participant_id"] = participant_count
         target_csv = pd.concat([target_csv, gaze_csv], axis=0)
+
+
+
+
 
 
 try:
