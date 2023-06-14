@@ -35,9 +35,9 @@ DRAW_BOUNDING_SIZE = (
     3  # Size of the bounding box (radius if circle) for the bounding box on the heatmap
 )
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
+# ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
-
 
 
 for index, folder in enumerate(os.listdir(ROOT_PATH)):
@@ -70,8 +70,8 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
             continue
 
         ##### Uncomment below if early stopping is required
-        if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
-            break
+        # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
+        #    break
 
         elif frame_no == SKIP_FIRST_N_FRAMES and frame_exists:
             first_frame = curr_frame
@@ -95,13 +95,13 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     cap.release()
 
     ### Write the outputs to the original data folder
-    cv2.imwrite(os.path.join(ROOT_PATH, f"/reference_image_{name}.png"), first_frame)
+    cv2.imwrite(os.path.join(ROOT_PATH, f"reference_image_{name}.png"), first_frame)
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png"),
+        os.path.join(ROOT_PATH, f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png"),
         final_img,
     )
     updated_gaze.to_csv(
-        os.path.join(ROOT_PATH, f"/updated_gaze_{name}.csv"), index=False
+        os.path.join(ROOT_PATH, f"updated_gaze_{name}.csv"), index=False
     )
 
     ### Write the data to the temp output folder
