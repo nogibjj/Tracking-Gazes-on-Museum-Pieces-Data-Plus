@@ -133,16 +133,16 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                 # if the observation gaze is within the bounds
                 # of two or more rectangles, the one with the
                 # smallest center is chosen
-                print("current gaze", obs_x, obs_y)
-                print("current name : ", name)
-                print("current center : ", smallest_center_x, smallest_center_y)
-                print("current distance : ", distance_from_center)
-                print("competing name : ", feature)
-                print("competing center : ", center_x, center_y)
-                print(
-                    "competing distance : ",
-                    math.dist((obs_x, obs_y), (center_x, center_y)),
-                )
+                # print("current gaze", obs_x, obs_y)
+                # print("current name : ", name)
+                # print("current center : ", smallest_center_x, smallest_center_y)
+                # print("current distance : ", distance_from_center)
+                # print("competing name : ", feature)
+                # print("competing center : ", center_x, center_y)
+                # print(
+                #     "competing distance : ",
+                #     math.dist((obs_x, obs_y), (center_x, center_y)),
+                # )
                 if (
                     math.dist((obs_x, obs_y), (center_x, center_y))
                     < distance_from_center
@@ -153,8 +153,8 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                         center_x
                     ), copy.deepcopy(center_y)
 
-                    print("new name : ", name)
-                    print("new center : ", smallest_center_x, smallest_center_y)
+                    # print("new name : ", name)
+                    # print("new center : ", smallest_center_x, smallest_center_y)
 
             else:
                 name = copy.deepcopy(feature)
