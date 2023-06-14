@@ -3,15 +3,16 @@ Author: Aditya John (aj391)
 This script contains helper functions used by the draw_heatmap.py script
 """
 import sys
-import random
+import os
 import cv2
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=False):
     """
-    Simple function to convert the ns linux timestamp datetype to normal milliseconds of elapsed time
+    Simple function to convert the ns linux timestamp datetype to 
+    normal milliseconds of elapsed time
     """
     gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
     start_timestamp = gaze_df[col_name][0]
@@ -23,8 +24,10 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=Fals
 
 def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size):
     """
-    Function to look at the current timestamp and return the pixel locations in the gaze csv that is closest to it.
-    Draws a bounding box of the specified size around that specific pixel location and returns the bounding box as a cropped image.
+    Function to look at the current timestamp and return the pixel locations 
+    in the gaze csv that is closest to it.
+    Draws a bounding box of the specified size around that specific pixel location 
+    and returns the bounding box as a cropped image.
     """
     current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
     closet_value = min(
@@ -36,14 +39,15 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     x_pixel = round(closest_row["gaze x [px]"][0])
     y_pixel = round(closest_row["gaze y [px]"][0])
     template = curr_frame[
-        y_pixel - bounding_size//2 : y_pixel + bounding_size//2, x_pixel - bounding_size//2: x_pixel + bounding_size//2
+        y_pixel - bounding_size // 2 : y_pixel + bounding_size // 2,
+        x_pixel - bounding_size // 2 : x_pixel + bounding_size // 2,
     ]
     return template, closest_row
 
 
 def get_closest_reference_pixel(target, template, chosen_method=1):
     """
-    Compares the cropped image from the above function to the reference image (likely the first non-grey frame)
+    Compares the cropped image from the above function to the reference image 
     and returns the pixel locations that most closely matches it
     """
     ###### Uses template matching
@@ -55,23 +59,26 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
         "cv2.TM_SQDIFF",
         "cv2.TM_SQDIFF_NORMED",
     ]
-    w, h, _ = template.shape[::-1]
+    width, height, _ = template.shape[::-1]
     method = eval(methods[chosen_method])
     res = cv2.matchTemplate(target, template, method)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+    _, _, min_loc, max_loc = cv2.minMaxLoc(res)
     # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
     if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
         top_left = min_loc
     else:
         top_left = max_loc
-    bottom_right = (top_left[0] + w, top_left[1] + h)
-    center = (int((top_left[0] + bottom_right[0])/2), int((top_left[1] + bottom_right[1])/2))
+    bottom_right = (top_left[0] + width, top_left[1] + height)
+    center = (
+        int((top_left[0] + bottom_right[0]) / 2),
+        int((top_left[1] + bottom_right[1]) / 2),
+    )
     return center
 
 
 def normalize_heatmap_dict(pixel_heatmap):
     EPSILON = sys.float_info.epsilon  # Smallest possible difference.
-    colors = [(0, 0, 255), (0, 255, 0),(255, 0, 0)]
+    colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
     minval = pixel_heatmap[min(pixel_heatmap, key=pixel_heatmap.get)]
     maxval = pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)]
 
@@ -99,9 +106,11 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size=3):
         op_frame = cv2.circle(first_frame, key, bounding_size, value, 2)
     return op_frame
 
-"""
-Using SIFT
-"""
+
+def create_directory(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
 """
     Using SIFT
