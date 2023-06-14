@@ -30,6 +30,7 @@ for folder in folder_files:
     print(f"Running for folder -- {folder}")
     pixel_heatmap = defaultdict(int)
     frame_no = 0
+    
     # ToDo: Write a function to skip the first n frames based on percentage of grey/black color in the image
     skip_first_n_frames = 60  # as the video starts with grey
     run_for_frames = 100  # Too low a value will cause a division by zero error
@@ -78,6 +79,6 @@ for folder in folder_files:
     normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
     final_img = draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size)
 
-    cv2.imwrite(f"{root_path}/{folder}/heatmap_output_{name}.png", final_img)
+    cv2.imwrite(f"{root_path}/{folder}/heatmap_output_{name}_{bounding_size}.png", final_img)
     updated_gaze.to_csv(f"{root_path}/{folder}/updated_gaze_{name}.csv", index=False)
     cap.release()

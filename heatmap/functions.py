@@ -36,7 +36,7 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     x_pixel = round(closest_row["gaze x [px]"][0])
     y_pixel = round(closest_row["gaze y [px]"][0])
     template = curr_frame[
-        y_pixel : y_pixel + bounding_size, x_pixel : x_pixel + bounding_size
+        y_pixel - bounding_size//2 : y_pixel + bounding_size//2, x_pixel - bounding_size//2: x_pixel + bounding_size//2
     ]
     return template, closest_row
 
@@ -46,42 +46,6 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
     Compares the cropped image from the above function to the reference image (likely the first non-grey frame)
     and returns the pixel locations that most closely matches it
     """
-
-    """
-    Using SIFT
-    sift = cv2.SIFT_create()
-
-    # Find keypoints and compute descriptors for the template and target images
-    keypoints_template, descriptors_template = sift.detectAndCompute(template, None)
-    keypoints_target, descriptors_target = sift.detectAndCompute(target, None)
-
-   # FLANN parameters
-    FLANN_INDEX_KDTREE = 1
-    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-    search_params = dict(checks=50)   # or pass empty dictionary
-    flann = cv2.FlannBasedMatcher(index_params,search_params)
-    matches = flann.knnMatch(descriptors_template,descriptors_target,k=2)
-    # Need to draw only good matches, so create a mask
-    matchesMask = [[0,0] for i in range(len(matches))]
-    # ratio test as per Lowe's paper
-    for i,(m,n) in enumerate(matches):
-        if m.distance < 0.7*n.distance:
-            matchesMask[i]=[1,0]
-    draw_params = dict(matchColor = (0,255,0),
-                    singlePointColor = (255,0,0),
-                    matchesMask = matchesMask,
-                    flags = cv2.DrawMatchesFlags_DEFAULT)
-    img3 = cv2.drawMatchesKnn(template,keypoints_template,target,keypoints_target,matches,None,**draw_params)
-    plt.imshow(img3,),plt.show()
-    number = random.randint(0, 1000)
-    cv2.imwrite(f"trash/{number}_matched.png", img3)
-    cv2.imwrite(f"trash/{number}_template.png", template)
-    cv2.imwrite(f"trash/{number}_target.png", target)
-
-
-    return (0, 0)
-    """
-
     ###### Uses template matching
     methods = [
         "cv2.TM_CCOEFF",
@@ -101,7 +65,7 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
     else:
         top_left = max_loc
     bottom_right = (top_left[0] + w, top_left[1] + h)
-    center = (int((top_left[0] + bottom_right[1])/2), int((top_left[1] + bottom_right[1])/2))
+    center = (int((top_left[0] + bottom_right[0])/2), int((top_left[1] + bottom_right[1])/2))
     return center
 
 
@@ -134,3 +98,42 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size=3):
     for key, value in pixel_heatmap.items():
         op_frame = cv2.circle(first_frame, key, bounding_size, value, 2)
     return op_frame
+
+"""
+Using SIFT
+"""
+
+"""
+    Using SIFT
+    sift = cv2.SIFT_create()
+
+    # Find keypoints and compute descriptors for the template and target images
+    keypoints_template, descriptors_template = sift.detectAndCompute(template, None)
+    keypoints_target, descriptors_target = sift.detectAndCompute(target, None)
+
+   # FLANN parameters
+    FLANN_INDEX_KDTREE = 1
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+    search_params = dict(checks=50)   # or pass empty dictionary
+    flann = cv2.FlannBasedMatcher(index_params,search_params)
+    matches = flann.knnMatch(descriptors_template,descriptors_target,k=2)
+    # Need to draw only good matches, so create a mask
+    matchesMask = [[0,0] for i in range(len(matches))]
+    # ratio test as per Lowe's paper
+    for i,(m,n) in enumerate(matches):
+        if m.distance < 0.7*n.distance:
+            matchesMask[i]=[1,0]
+    draw_params = dict(matchColor = (0,255,0),
+                    singlePointColor = (255,0,0),
+                    matchesMask = matchesMask,
+                    flags = cv2.DrawMatchesFlags_DEFAULT)
+    img3 = cv2.drawMatchesKnn(template,keypoints_template,target,keypoints_target,matches,None,**draw_params)
+    plt.imshow(img3,),plt.show()
+    number = random.randint(0, 1000)
+    cv2.imwrite(f"trash/{number}_matched.png", img3)
+    cv2.imwrite(f"trash/{number}_template.png", template)
+    cv2.imwrite(f"trash/{number}_target.png", target)
+
+
+    return (0, 0)
+"""
