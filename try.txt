@@ -1,2 +1,10 @@
 fixing commits
 fixing more
+
+id x == 'adi':
+    path = =5
+    ouput = 6
+
+if a == 'eric:
+    path = ""
+    output = ""
