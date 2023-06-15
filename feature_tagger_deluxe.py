@@ -1,6 +1,7 @@
 ### Adding temporary solution for multiple folders
 from repository_finder import repository_details
 import os
+from tag_event_functions import drawfunction
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
 
@@ -19,6 +20,6 @@ for folder in os.listdir(ROOT_PATH):
         continue
 
 for folder in participant_paths_folders:
-    drawing = True
-
-    feature_coordinates = []
+   
+   
+   base_img = 
