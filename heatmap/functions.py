@@ -22,7 +22,7 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=Fals
     return gaze_df
 
 
-def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size):
+def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size, resample=False):
     """
     Function to look at the current timestamp and return the pixel locations 
     in the gaze csv that is closest to it.
@@ -30,6 +30,12 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     and returns the bounding box as a cropped image.
     """
     current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+    gaze_csv = gaze_csv.copy() # To ensure that the resample doesn't affect the next frame processing
+    if resample:
+        gaze_csv.set_index('timestamp [ns]', inplace=True)
+        required_cols = ['gaze x [px]', 'gaze y [px]']
+        gaze_csv = gaze_csv[required_cols].resample('50ms').mean()
+
     closet_value = min(
         gaze_csv["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
     )

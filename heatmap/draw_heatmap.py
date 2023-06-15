@@ -95,16 +95,16 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     cap.release()
 
     ### Write the outputs to the original data folder
-    cv2.imwrite(os.path.join(ROOT_PATH, f"/reference_image_{name}.png"), first_frame)
+    cv2.imwrite(os.path.join(ROOT_PATH, name, f"reference_image_{name}.png"), first_frame)
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png"),
+        os.path.join(ROOT_PATH, name, f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png"),
         final_img,
     )
     updated_gaze.to_csv(
-        os.path.join(ROOT_PATH, f"/updated_gaze_{name}.csv"), index=False
+        os.path.join(ROOT_PATH, name, f"updated_gaze_{name}.csv"), index=False
     )
 
     ### Write the data to the temp output folder
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
-    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+    cv2.imwrite(os.path.join() {name}_reference_image.png", first_frame)
+    cv2.imwrite(os.path.join(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
+    updated_gaze.to_csv(os.path.join(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
