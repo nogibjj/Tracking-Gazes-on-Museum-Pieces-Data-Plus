@@ -29,7 +29,7 @@ def resample_gaze(
     resample_freq="50ms",
 ):
     """
-    Function that resamples the chosen timestamp column to a new frequency 
+    Function that resamples the chosen timestamp column to a new frequency
     The default is to change to 50 milli seconds
     """
     gaze_df[timestamp_col] = pd.to_datetime(gaze_df[timestamp_col])
