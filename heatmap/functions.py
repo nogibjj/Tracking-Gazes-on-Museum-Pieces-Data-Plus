@@ -18,28 +18,11 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=Fals
     start_timestamp = gaze_df[col_name][0]
     if subtract:
         gaze_df[col_name] = gaze_df[col_name] - start_timestamp
-    gaze_df[col_name] = gaze_df[col_name].astype(np.int64)
+    gaze_df[col_name] = gaze_df[col_name].astype(np.int64) / int(1e6)
     return gaze_df
 
 
-def resample_gaze(
-    gaze_df,
-    timestamp_col="timestamp [ns]",
-    required_cols=["gaze x [px]", "gaze y [px]"],
-    resample_freq="50ms",
-):
-    """
-    Function that resamples the chosen timestamp column to a new frequency
-    The default is to change to 50 milli seconds
-    """
-    gaze_df[timestamp_col] = pd.to_datetime(gaze_df[timestamp_col])
-    gaze_df.set_index(timestamp_col, inplace=True)
-    gaze_df = gaze_df[required_cols].resample(resample_freq).mean().reset_index()
-    gaze_df[timestamp_col] = gaze_df[timestamp_col].astype(np.int64)
-    return gaze_df
-
-
-def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
+def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size):
     """
     Function to look at the current timestamp and return the pixel locations
     in the gaze csv that is closest to it.
@@ -47,6 +30,7 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     and returns the bounding box as a cropped image.
     """
     current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+    print(current_timestamp)
     closet_value = min(
         gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
     )
