@@ -37,8 +37,7 @@ DRAW_BOUNDING_SIZE = (
 )
 RESAMPLE = False
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
-# ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
-
+ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
 
@@ -100,14 +99,19 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
             break
 
     normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-    final_img = draw_heatmap_on_ref_img(pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE)
+    final_img = draw_heatmap_on_ref_img(
+        pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE
+    )
 
     cap.release()
 
     ### Write the outputs to the original data folder
     cv2.imwrite(os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame)
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}_{str(RESAMPLE)}.png"),
+        os.path.join(
+            ROOT_PATH,
+            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
+        ),
         final_img,
     )
     updated_gaze.to_csv(
@@ -116,5 +120,5 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
 
     ### Write the data to the temp output folder
     cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_{DETECT_BOUNDING_SIZE}__{str(RESAMPLE)}_heatmap.png", final_img)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
     updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)

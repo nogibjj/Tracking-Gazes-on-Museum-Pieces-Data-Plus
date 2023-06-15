@@ -25,7 +25,6 @@ all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 all_gaze = fake_tagger(all_gaze)
 all_gaze.reset_index(drop=True, inplace=True)
 mode = all_gaze["tag"].mode()
-print(mode)
 
 
 def participant_folder_corrector(input_string):
@@ -166,6 +165,7 @@ plt.bar(percent_time["tag"], percent_time["% time"])
 plt.xlabel("Feature")
 plt.ylabel("% Time Spent Looking")
 plt.title("% Time Spent Looking at Each Feature (All Participants)")
+plt.savefig("%_time_plot.png")
 plt.show()
 
 # Mean streak duration for each feature plotted (all)
@@ -174,6 +174,7 @@ plt.bar(mean_streak["tag"], mean_streak["duration(s)"])
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
 plt.title("Mean Streak Duration by Feature (All Participants)")
+plt.savefig("mean_streak_plot.png")
 plt.show()
 
 # Mean duration spent looking at each feature plotted (all)
@@ -182,6 +183,7 @@ plt.bar(features["tag"], features["mean duration(s)"])
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
 plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
+plt.savefig("mean_dur_plot.png")
 plt.show()
 
 # Percent time spent on each feature in men vs. women plotted
@@ -200,3 +202,14 @@ percent_fvm.plot(
     xlabel="Feature",
     ylabel="% Time Spent",
 )
+plt.savefig("%_time_mvf.png")
+
+# Most looked at feature by age group table
+gaze_copy["age group"] = pd.cut(
+    gaze_copy["Age"], bins=6, right=True, precision=0, include_lowest=True
+)
+ages = ["17-24", "25-32", "33-40", "41-48", "49-56", "57-64"]
+mode_by_age = gaze_copy.groupby(["age group"])["tag"].agg(pd.Series.mode)
+mode_ft_age = pd.DataFrame(ages, columns=["Age"])
+mode_ft_age["Feature"] = mode_by_age.tolist()
+mode_ft_age.to_csv("mode_feature_by_age.csv", index=False)
