@@ -16,6 +16,7 @@ from collections import defaultdict
 import os
 import glob
 import pandas as pd
+import numpy as np
 import cv2
 from functions import (
     convert_timestamp_ns_to_ms,
@@ -94,7 +95,7 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
             break
 
     normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-    final_img = draw_heatmap_on_ref_img(pixel_heatmap, first_frame, DRAW_BOUNDING_SIZE)
+    final_img = draw_heatmap_on_ref_img(pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE)
 
     cap.release()
 
