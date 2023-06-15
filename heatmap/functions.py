@@ -8,8 +8,7 @@ import cv2
 import pandas as pd
 import numpy as np
 
-
-def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=False):
+def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=True):
     """
     Simple function to convert the ns linux timestamp datetype to
     normal milliseconds of elapsed time
@@ -18,7 +17,7 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=Fals
     start_timestamp = gaze_df[col_name][0]
     if subtract:
         gaze_df[col_name] = gaze_df[col_name] - start_timestamp
-    gaze_df[col_name] = gaze_df[col_name].astype(np.int64)
+    gaze_df[col_name] = gaze_df[col_name].astype(np.int64)/1e6
     return gaze_df
 
 
@@ -50,6 +49,7 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     closet_value = min(
         gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
     )
+
     closest_row = pd.DataFrame(
         gaze_df[gaze_df["timestamp [ns]"] == closet_value].reset_index()
     )
@@ -59,6 +59,7 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
         y_pixel - bounding_size // 2 : y_pixel + bounding_size // 2,
         x_pixel - bounding_size // 2 : x_pixel + bounding_size // 2,
     ]
+
     return template, closest_row
 
 
