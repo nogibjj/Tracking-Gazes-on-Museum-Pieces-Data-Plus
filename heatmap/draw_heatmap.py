@@ -24,8 +24,8 @@ from functions import (
     normalize_heatmap_dict,
     draw_heatmap_on_ref_img,
     create_directory,
+    resample_gaze,
 )
-
 
 # Define Constant Variables
 SKIP_FIRST_N_FRAMES = 60  # As some (most) videos start with grey screen
@@ -34,8 +34,10 @@ DETECT_BOUNDING_SIZE = 20  # Size of the bounding box for detecition
 DRAW_BOUNDING_SIZE = (
     3  # Size of the bounding box (radius if circle) for the bounding box on the heatmap
 )
+RESAMPLE = True
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
 # ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
+
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
 
@@ -53,8 +55,10 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     video_file = os.path.join(folder, "*.mp4")
     video_file = glob.glob(video_file)[0]
 
-    gaze_csv = pd.read_csv(csv_file)
-    gaze_csv = convert_timestamp_ns_to_ms(gaze_csv)
+    gaze_df = pd.read_csv(csv_file)
+    gaze_df = convert_timestamp_ns_to_ms(gaze_df)
+    if RESAMPLE:
+        gaze_df = resample_gaze(gaze_df)
 
     updated_gaze = pd.DataFrame()
     cap = cv2.VideoCapture(video_file)
@@ -78,7 +82,7 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
 
         elif frame_exists:
             gaze_object_crop, closest_row = get_closest_individual_gaze_object(
-                cap, curr_frame, gaze_csv, DETECT_BOUNDING_SIZE
+                cap, curr_frame, gaze_df, DETECT_BOUNDING_SIZE
             )
             ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
             closest_row["ref_center_x"] = ref_center[0]
@@ -97,7 +101,7 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     ### Write the outputs to the original data folder
     cv2.imwrite(os.path.join(ROOT_PATH, f"reference_image_{name}.png"), first_frame)
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png"),
+        os.path.join(ROOT_PATH, f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}_{str(RESAMPLE)}.png"),
         final_img,
     )
     updated_gaze.to_csv(
@@ -105,6 +109,6 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     )
 
     ### Write the data to the temp output folder
-    cv2.imwrite(os.path.join() {name}_reference_image.png", first_frame)
-    cv2.imwrite(os.path.join(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
-    updated_gaze.to_csv(os.path.join(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_{DETECT_BOUNDING_SIZE}__{str(RESAMPLE)}_heatmap.png", final_img)
+    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
