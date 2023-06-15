@@ -166,6 +166,7 @@ plt.bar(percent_time["tag"], percent_time["% time"])
 plt.xlabel("Feature")
 plt.ylabel("% Time Spent Looking")
 plt.title("% Time Spent Looking at Each Feature (All Participants)")
+plt.show()
 
 # Mean streak duration for each feature plotted (all)
 mean_streak = mean_streak.reset_index()
@@ -173,6 +174,7 @@ plt.bar(mean_streak["tag"], mean_streak["duration(s)"])
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
 plt.title("Mean Streak Duration by Feature (All Participants)")
+plt.show()
 
 # Mean duration spent looking at each feature plotted (all)
 features = features.reset_index()
@@ -180,6 +182,7 @@ plt.bar(features["tag"], features["mean duration(s)"])
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
 plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
+plt.show()
 
 # Percent time spent on each feature in men vs. women plotted
 percent_f = percent_f.to_frame()
