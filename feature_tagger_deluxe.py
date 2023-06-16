@@ -2,6 +2,7 @@
 from repository_finder import repository_details
 import os
 from tag_event_functions import drawfunction
+import cv2
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
 
@@ -20,6 +21,16 @@ for folder in os.listdir(ROOT_PATH):
         continue
 
 for folder in participant_paths_folders:
-   
-   
-   base_img = 
+    files = os.listdir(folder)
+
+    for single_file in files:
+        if ".mp4" in single_file:
+            file = os.path.join(folder, single_file)
+            print(f"Running for file -- {single_file}")
+    print(f"file is {file}")
+    base_img = cv2.imread(file)
+    # base_img = cv2.imread("test4 image prompter.jpg")
+    # img = cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)
+    img = base_img
+    reset_img = img.copy()
+    plt.imshow(img)
