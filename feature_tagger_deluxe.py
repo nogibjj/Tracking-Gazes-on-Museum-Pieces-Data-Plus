@@ -54,7 +54,12 @@ for folder in participant_paths_folders[0:1]:
     reset_img = img.copy()
     # plt.imshow(img)
 
+    # get the resolution of the image
+    height, width, channels = img.shape
+    print(f"width: {width}, height: {height}, channels: {channels}")
+
     cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("image", width, height)
 
     cv2.setMouseCallback("image", drawfunction, param)
 
@@ -107,7 +112,9 @@ for folder in participant_paths_folders[0:1]:
     current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     print(f"Saving the csv to {os.path.join(folder, f'tags.csv')}")
-    coordinates_df.to_csv(os.path.join(folder, f"tags_{current_time}.csv"), index=False)
+    coordinates_df.to_csv(
+        os.path.join(folder, f"tags_coordinates_{current_time}.csv"), index=False
+    )
     # market basket analysis
     # https://pbpython.com/market-basket-analysis.html
 

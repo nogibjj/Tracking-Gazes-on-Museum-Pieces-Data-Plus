@@ -33,17 +33,17 @@ SKIP_FIRST_N_FRAMES = 60  # As some (most) videos start with grey screen
 RUN_FOR_FRAMES = 100  # Too low a value will cause a division by zero error
 DETECT_BOUNDING_SIZE = 50  # Size of the bounding box for detecition
 DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
-RESAMPLE = False # Resample (from ns to ms) or choose the closest row
+RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
-# ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
+ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
 
 
 for index, folder in enumerate(os.listdir(ROOT_PATH)):
     folder = os.path.join(ROOT_PATH, folder)
-    folder = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data/2021_2bm"
-    print('#'*50)
+    # folder = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data/2021_2bm"
+    print("#" * 50)
     print(f"Running for folder {index} -- {folder}")
     pixel_heatmap = defaultdict(int)
     frame_no = 0
@@ -53,8 +53,9 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
 
     csv_file = os.path.join(folder, "gaze.csv")
     video_file = os.path.join(folder, "*.mp4")
+    print(f"Running for video file -- {video_file}")
     video_file = glob.glob(video_file)[0]
-
+    print(f"Running for video file -- {video_file}")
     gaze_df = pd.read_csv(csv_file)
     gaze_df = convert_timestamp_ns_to_ms(gaze_df)
     if RESAMPLE:
@@ -65,7 +66,6 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
 
     try:
         while cap.isOpened():
-        
             if frame_no % 1000 == 0:
                 print(f"Processed {frame_no} frames")
 
@@ -131,5 +131,3 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
         print(frame_no)
         print(ee)
         continue
-
-
