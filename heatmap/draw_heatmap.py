@@ -32,12 +32,10 @@ from functions import (
 SKIP_FIRST_N_FRAMES = 60  # As some (most) videos start with grey screen
 RUN_FOR_FRAMES = 100  # Too low a value will cause a division by zero error
 DETECT_BOUNDING_SIZE = 50  # Size of the bounding box for detecition
-DRAW_BOUNDING_SIZE = (
-    3  # Size of the bounding box (radius if circle) for the bounding box on the heatmap
-)
-RESAMPLE = False
+DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
+RESAMPLE = False # Resample (from ns to ms) or choose the closest row
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
-ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
+# ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
 
@@ -89,11 +87,12 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
             closest_row["ref_center_y"] = ref_center[1]
             updated_gaze = pd.concat([updated_gaze, closest_row])
             pixel_heatmap[ref_center] += 1
+
             # Below code is just for plotting the centre of the images
+
             # _x = int(closest_row['gaze x [px]'].iloc[0])
             # _y = int(closest_row['gaze y [px]'].iloc[0])
-            # pixel_heatmap[_x, _y] += 1 
-            
+            # pixel_heatmap[_x, _y] += 1
 
         else:
             break
@@ -106,7 +105,9 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     cap.release()
 
     ### Write the outputs to the original data folder
-    cv2.imwrite(os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame)
+    cv2.imwrite(
+        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
+    )
     cv2.imwrite(
         os.path.join(
             ROOT_PATH,

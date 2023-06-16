@@ -21,7 +21,7 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=True
     return gaze_df
 
 
-def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size):
+def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     """
     Function to look at the current timestamp and return the pixel locations
     in the gaze csv that is closest to it.
@@ -29,7 +29,6 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     and returns the bounding box as a cropped image.
     """
     current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
-    print(current_timestamp)
     closet_value = min(
         gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
     )
@@ -39,6 +38,9 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_csv, bounding_size)
     )
     x_pixel = round(closest_row["gaze x [px]"][0])
     y_pixel = round(closest_row["gaze y [px]"][0])
+
+    # ToDo: Modify the bounding box to make it large but dynamic enough to make it smaller closer
+    # to the edges of the image (if the bb size is 250 at the edges, nothings gets drawn)
     template = curr_frame[
         y_pixel - bounding_size // 2 : y_pixel + bounding_size // 2,
         x_pixel - bounding_size // 2 : x_pixel + bounding_size // 2,
@@ -52,7 +54,6 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
     Compares the cropped image from the above function to the reference image
     and returns the pixel locations that most closely matches it
     """
-    ###### Uses template matching
     methods = [
         "cv2.TM_CCOEFF",
         "cv2.TM_CCOEFF_NORMED",
@@ -79,13 +80,20 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
 
 
 def normalize_heatmap_dict(pixel_heatmap):
+    """
+    Function to normalize the data between a given range to encode the
+    gradient for the heatmap
+    """
     EPSILON = sys.float_info.epsilon  # Smallest possible difference.
     colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
     minval = pixel_heatmap[min(pixel_heatmap, key=pixel_heatmap.get)]
-    maxval = pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)]
+    maxval = min(pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)], 255)
 
     for key, val in pixel_heatmap.items():
         i_f = float(val - minval) / float(maxval - minval) * (len(colors) - 1)
+        ##### i_f = abs(255 - i_f)
+        ##### pixel_heatmap[key] = (255, i_f, i_f)
+
         i, f = int(i_f // 1), i_f % 1
         if f < EPSILON:
             pixel_heatmap[key] = colors[i]
@@ -103,15 +111,35 @@ def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size=3):
     """
     Function to draw the heatmap on the reference image based on the pixel locations
     """
-    bounding_size = 10
     for key, value in pixel_heatmap.items():
         op_frame = cv2.circle(first_frame, key, bounding_size, value, 2)
     return op_frame
 
 
 def create_directory(directory):
+    """
+    Function to create a dictionary if it doesnt exist
+    """
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def resample_gaze(
+    gaze_df,
+    timestamp_col="timestamp [ns]",
+    required_cols=["gaze x [px]", "gaze y [px]"],
+    resample_freq="50ms",
+):
+    """
+    Function to look at the current timestamp and return the pixel locations
+    Function that resamples the chosen timestamp column to a new frequency
+    The default is to change to 50 milli seconds
+    """
+    gaze_df[timestamp_col] = pd.to_datetime(gaze_df[timestamp_col])
+    gaze_df.set_index(timestamp_col, inplace=True)
+    gaze_df = gaze_df[required_cols].resample(resample_freq).mean().reset_index()
+    gaze_df[timestamp_col] = gaze_df[timestamp_col].astype(np.int64)
+    return gaze_df
 
 
 """
