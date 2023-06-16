@@ -38,7 +38,6 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     )
     x_pixel = round(closest_row["gaze x [px]"][0])
     y_pixel = round(closest_row["gaze y [px]"][0])
-
     # ToDo: Modify the bounding box to make it large but dynamic enough to make it smaller closer
     # to the edges of the image (if the bb size is 250 at the edges, nothings gets drawn)
     template = curr_frame[

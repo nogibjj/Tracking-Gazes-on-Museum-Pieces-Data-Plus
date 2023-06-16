@@ -42,6 +42,8 @@ create_directory(TEMP_OUTPUT_DIR)
 
 for index, folder in enumerate(os.listdir(ROOT_PATH)):
     folder = os.path.join(ROOT_PATH, folder)
+    folder = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data/2021_2bm"
+    print('#'*50)
     print(f"Running for folder {index} -- {folder}")
     pixel_heatmap = defaultdict(int)
     frame_no = 0
@@ -61,65 +63,73 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     updated_gaze = pd.DataFrame()
     cap = cv2.VideoCapture(video_file)
 
-    while cap.isOpened():
-        if frame_no % 1000 == 0:
-            print(f"Processed {frame_no} frames")
+    try:
+        while cap.isOpened():
+        
+            if frame_no % 1000 == 0:
+                print(f"Processed {frame_no} frames")
 
-        frame_no += 1
-        frame_exists, curr_frame = cap.read()
+            frame_no += 1
+            frame_exists, curr_frame = cap.read()
 
-        if frame_no < SKIP_FIRST_N_FRAMES:
-            continue
+            if frame_no < SKIP_FIRST_N_FRAMES:
+                continue
 
-        ##### Uncomment below if early stopping is required
-        # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
-        #    break
+            ##### Uncomment below if early stopping is required
+            # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
+            #    break
 
-        elif frame_no == SKIP_FIRST_N_FRAMES and frame_exists:
-            first_frame = curr_frame
+            elif frame_no == SKIP_FIRST_N_FRAMES and frame_exists:
+                first_frame = curr_frame
 
-        elif frame_exists:
-            gaze_object_crop, closest_row = get_closest_individual_gaze_object(
-                cap, curr_frame, gaze_df, DETECT_BOUNDING_SIZE
-            )
-            ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
-            closest_row["ref_center_x"] = ref_center[0]
-            closest_row["ref_center_y"] = ref_center[1]
-            updated_gaze = pd.concat([updated_gaze, closest_row])
-            pixel_heatmap[ref_center] += 1
+            elif frame_exists:
+                gaze_object_crop, closest_row = get_closest_individual_gaze_object(
+                    cap, curr_frame, gaze_df, DETECT_BOUNDING_SIZE
+                )
+                ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
+                closest_row["ref_center_x"] = ref_center[0]
+                closest_row["ref_center_y"] = ref_center[1]
+                updated_gaze = pd.concat([updated_gaze, closest_row])
+                pixel_heatmap[ref_center] += 1
 
-            # Below code is just for plotting the centre of the images
+                # Below code is just for plotting the centre of the images
 
-            # _x = int(closest_row['gaze x [px]'].iloc[0])
-            # _y = int(closest_row['gaze y [px]'].iloc[0])
-            # pixel_heatmap[_x, _y] += 1
+                # _x = int(closest_row['gaze x [px]'].iloc[0])
+                # _y = int(closest_row['gaze y [px]'].iloc[0])
+                # pixel_heatmap[_x, _y] += 1
 
-        else:
-            break
+            else:
+                break
 
-    normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-    final_img = draw_heatmap_on_ref_img(
-        pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE
-    )
+        normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
+        final_img = draw_heatmap_on_ref_img(
+            pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE
+        )
 
-    cap.release()
+        cap.release()
 
-    ### Write the outputs to the original data folder
-    cv2.imwrite(
-        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
-    )
-    cv2.imwrite(
-        os.path.join(
-            ROOT_PATH,
-            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
-        ),
-        final_img,
-    )
-    updated_gaze.to_csv(
-        os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}.csv"), index=False
-    )
+        ### Write the outputs to the original data folder
+        cv2.imwrite(
+            os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
+        )
+        cv2.imwrite(
+            os.path.join(
+                ROOT_PATH,
+                f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
+            ),
+            final_img,
+        )
+        updated_gaze.to_csv(
+            os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}.csv"), index=False
+        )
 
-    ### Write the data to the temp output folder
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
-    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+        ### Write the data to the temp output folder
+        cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
+        cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
+        updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+    except Exception as ee:
+        print(frame_no)
+        print(ee)
+        continue
+
+
