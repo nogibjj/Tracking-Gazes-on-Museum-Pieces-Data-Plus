@@ -5,6 +5,7 @@ from tag_event_functions import drawfunction
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
+import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
 
@@ -22,12 +23,13 @@ for folder in os.listdir(ROOT_PATH):
         print(f"{folder} is a file")
         continue
 
-from repository_finder import repository_details
-import os
-from tag_event_functions import drawfunction
-import cv2
-import matplotlib.pyplot as plt
-import pandas as pd
+checkpoint = False
+last_folder = None
+
+if checkpoint:
+    index_change = participant_paths_folders.index(last_folder)
+
+    participant_paths_folders = participant_paths_folders[index_change + 1 :]
 
 for folder in participant_paths_folders[0:1]:
     files = os.listdir(folder)
@@ -52,7 +54,7 @@ for folder in participant_paths_folders[0:1]:
     reset_img = img.copy()
     # plt.imshow(img)
 
-    cv2.namedWindow("image")
+    cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
 
     cv2.setMouseCallback("image", drawfunction, param)
 
@@ -101,3 +103,14 @@ for folder in participant_paths_folders[0:1]:
 
     print("assertions passed")
     print(coordinates_df.head())
+
+    current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    print(f"Saving the csv to {os.path.join(folder, f'tags.csv')}")
+    coordinates_df.to_csv(os.path.join(folder, f"tags_{current_time}.csv"), index=False)
+    # market basket analysis
+    # https://pbpython.com/market-basket-analysis.html
+
+    last_folder = folder
+
+    print(f"Finished generating tags for  {participant_id}")
