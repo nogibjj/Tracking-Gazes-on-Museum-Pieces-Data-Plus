@@ -29,12 +29,13 @@ import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
 
-for folder in participant_paths_folders[0:2]:
+for folder in participant_paths_folders[0:1]:
     files = os.listdir(folder)
-    participant_id = folder
+    participant_id = folder.split("\\")[-1]
     feature_coordinates = []
     drawing = True
     flag = True
+    list_finished = False
 
     for single_file in files:
         if "reference_image" in single_file:
@@ -42,6 +43,8 @@ for folder in participant_paths_folders[0:2]:
             print(f"Running for file -- {single_file}")
 
     base_img = cv2.imread(file)
+
+    param = [base_img, feature_coordinates]
 
     # base_img = cv2.imread("test4 image prompter.jpg")
     # img = cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)
@@ -51,7 +54,7 @@ for folder in participant_paths_folders[0:2]:
 
     cv2.namedWindow("image")
 
-    cv2.setMouseCallback("image", drawfunction)
+    cv2.setMouseCallback("image", drawfunction, param)
 
     while flag:
         cv2.imshow("image", img)
@@ -97,3 +100,4 @@ for folder in participant_paths_folders[0:2]:
     ]
 
     print("assertions passed")
+    print(coordinates_df.head())
