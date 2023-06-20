@@ -13,6 +13,7 @@ Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-b
 - QC the outputs - April?
 """
 from collections import defaultdict
+import traceback
 import os
 import glob
 import pandas as pd
@@ -26,6 +27,7 @@ from functions import (
     draw_heatmap_on_ref_img,
     create_directory,
     resample_gaze,
+    save_outputs,
 )
 
 # Define Constant Variables
@@ -34,15 +36,14 @@ RUN_FOR_FRAMES = 100  # Too low a value will cause a division by zero error
 DETECT_BOUNDING_SIZE = 50  # Size of the bounding box for detecition
 DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
 RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
+RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
 ROOT_PATH = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data"
 ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
 TEMP_OUTPUT_DIR = "." + os.sep + "output"
 create_directory(TEMP_OUTPUT_DIR)
 
-
 for index, folder in enumerate(os.listdir(ROOT_PATH)):
     folder = os.path.join(ROOT_PATH, folder)
-    # folder = "/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/data/2021_2bm"
     print("#" * 50)
     print(f"Running for folder {index} -- {folder}")
     pixel_heatmap = defaultdict(int)
@@ -64,64 +65,64 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
     updated_gaze = pd.DataFrame()
     cap = cv2.VideoCapture(video_file)
 
-    try:
-        while cap.isOpened():
-            if frame_no % 1000 == 0:
-                print(f"Processed {frame_no} frames")
+    while cap.isOpened():
+        if frame_no % 1000 == 0:
+            print(f"Processed {frame_no} frames")
 
-            frame_no += 1
-            frame_exists, curr_frame = cap.read()
+        frame_no += 1
+        frame_exists, curr_frame = cap.read()
 
-            if frame_no < SKIP_FIRST_N_FRAMES:
+        if frame_no < SKIP_FIRST_N_FRAMES:
+            continue
+
+        ##### Uncomment below if early stopping is required
+        # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
+        #    break
+
+        elif frame_no == SKIP_FIRST_N_FRAMES and frame_exists:
+            first_frame = curr_frame
+
+        elif frame_exists:
+            gaze_object_crop, closest_row = get_closest_individual_gaze_object(
+                cap, curr_frame, gaze_df, DETECT_BOUNDING_SIZE
+            )
+
+            if not gaze_object_crop.any() or closest_row.empty: 
                 continue
 
-            ##### Uncomment below if early stopping is required
-            # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
-            #    break
+            ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
+            if ref_center == None:
+                continue
 
-            elif frame_no == SKIP_FIRST_N_FRAMES and frame_exists:
-                first_frame = curr_frame
+            closest_row["ref_center_x"] = ref_center[0]
+            closest_row["ref_center_y"] = ref_center[1]
+            updated_gaze = pd.concat([updated_gaze, closest_row])
+            pixel_heatmap[ref_center] += 1
 
-            elif frame_exists:
-                gaze_object_crop, closest_row = get_closest_individual_gaze_object(
-                    cap, curr_frame, gaze_df, DETECT_BOUNDING_SIZE
-                )
-                ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
-                closest_row["ref_center_x"] = ref_center[0]
-                closest_row["ref_center_y"] = ref_center[1]
-                updated_gaze = pd.concat([updated_gaze, closest_row])
-                pixel_heatmap[ref_center] += 1
+            # Below code is just for plotting the centre of the images
 
-                # Below code is just for plotting the centre of the images
+            # _x = int(closest_row['gaze x [px]'].iloc[0])
+            # _y = int(closest_row['gaze y [px]'].iloc[0])
+            # pixel_heatmap[_x, _y] += 1
 
-                # _x = int(closest_row['gaze x [px]'].iloc[0])
-                # _y = int(closest_row['gaze y [px]'].iloc[0])
-                # pixel_heatmap[_x, _y] += 1
+        else:
+            break
 
-            else:
-                break
+    normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
+    final_img = draw_heatmap_on_ref_img(
+        pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE
+    )
 
-        normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-        final_img = draw_heatmap_on_ref_img(
-            pixel_heatmap, np.copy(first_frame), DRAW_BOUNDING_SIZE
-        )
-
-        cap.release()
-
-        ### Write the outputs to the original data folder
-        cv2.imwrite(
-            os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
-        )
-        cv2.imwrite(
-            os.path.join(
-                ROOT_PATH,
-                f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
-            ),
-            final_img,
-        )
-        updated_gaze.to_csv(
-            os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}.csv"), index=False
-        )
+    cap.release()
+    save_outputs(
+        ROOT_PATH,
+        name,
+        first_frame,
+        DETECT_BOUNDING_SIZE,
+        final_img,
+        updated_gaze,
+        TEMP_OUTPUT_DIR,
+    )
 
         ### Write the data to the temp output folder
         cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
@@ -131,3 +132,5 @@ for index, folder in enumerate(os.listdir(ROOT_PATH)):
         print(frame_no)
         print(ee)
         continue
+
+
