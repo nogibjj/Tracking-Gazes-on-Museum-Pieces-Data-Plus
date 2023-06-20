@@ -5,9 +5,12 @@ from tag_event_functions import drawfunction
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
+import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
+ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
 
+MEMBER_FLAG = "ERIC"
 participant_paths_folders = []
 
 for folder in os.listdir(ROOT_PATH):
@@ -22,20 +25,55 @@ for folder in os.listdir(ROOT_PATH):
         print(f"{folder} is a file")
         continue
 
-from repository_finder import repository_details
-import os
-from tag_event_functions import drawfunction
-import cv2
-import matplotlib.pyplot as plt
-import pandas as pd
+checkpoint = False
+last_folder = None
 
-for folder in participant_paths_folders[0:1]:
+if checkpoint:
+    index_change = participant_paths_folders.index(last_folder)
+
+    participant_paths_folders = participant_paths_folders[index_change + 1 :]
+
+participant_list = []
+
+# fixing news issue - Warning - Temporary fix
+for folder in participant_paths_folders:
+    files = os.listdir(folder)
+    participant_id = folder.split("\\")[-1]
+    if "new" in participant_id:
+        print(f"Fixing participant id -- {participant_id}")
+        temp = participant_id.replace("new", "")
+        flip_flag = False
+        for id in participant_list:
+            if temp in id:
+                print(f"Replacing {id} with {participant_id}")
+                ind = participant_list.index(id)
+                flip_flag = True
+                participant_list.pop(ind)
+                participant_list.append(participant_id)
+        if not (flip_flag):
+            participant_list.append(participant_id)
+            flip_flag = False
+    else:
+        participant_list.append(participant_id)
+
+bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
+
+if MEMBER_FLAG == "APRIL":
+    participant_list = participant_list[0:bulk_count]
+
+elif MEMBER_FLAG == "ERIC":
+    participant_list = participant_list[bulk_count:]
+
+for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split("\\")[-1]
     feature_coordinates = []
     drawing = True
     flag = True
     list_finished = False
+    if participant_id not in participant_list:
+        print(f"Skipping folder -- {folder}")
+        continue
 
     for single_file in files:
         if "reference_image" in single_file:
@@ -52,7 +90,12 @@ for folder in participant_paths_folders[0:1]:
     reset_img = img.copy()
     # plt.imshow(img)
 
-    cv2.namedWindow("image")
+    # get the resolution of the image
+    height, width, channels = img.shape
+    print(f"width: {width}, height: {height}, channels: {channels}")
+
+    cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("image", width, height)
 
     cv2.setMouseCallback("image", drawfunction, param)
 
@@ -101,3 +144,16 @@ for folder in participant_paths_folders[0:1]:
 
     print("assertions passed")
     print(coordinates_df.head())
+
+    current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    print(f"Saving the csv to {os.path.join(folder, f'tags.csv')}")
+    coordinates_df.to_csv(
+        os.path.join(folder, f"tags_coordinates_{current_time}.csv"), index=False
+    )
+    # market basket analysis
+    # https://pbpython.com/market-basket-analysis.html
+
+    last_folder = folder
+
+    print(f"Finished generating tags for  {participant_id}")

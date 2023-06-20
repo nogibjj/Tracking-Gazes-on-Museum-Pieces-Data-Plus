@@ -19,7 +19,7 @@ def modify(df):
     return df
 
 
-# Most frequently looked at/returned to feature
+# Feature with highest number of fixations
 all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
 all_gaze = fake_tagger(all_gaze)
@@ -46,13 +46,32 @@ def participant_folder_corrector(input_string):
         return input_string.replace("_", "_0")
 
 
+def participant_corrector(input_string):
+    """Fixing the 1 digit issue after the underscore"""
+    items = input_string.split("_")  # attach  maxsplit later
+    section_of_interest = items[-1]
+    count = 0
+    for char in section_of_interest:
+        if char.isdigit():
+            count += 1
+
+        else:
+            pass
+
+    if count >= 2:
+        return input_string
+
+    else:
+        return input_string.replace("_", "_0")
+
+
 demographic = pd.read_excel("demographic.xlsx")
 demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].fillna("none")
 demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].apply(
-    lambda x: participant_folder_corrector(x)
+    lambda x: participant_corrector(x)
 )
 all_gaze["codice_eyetr_museo"] = all_gaze["participant_folder"].apply(
-    lambda x: participant_folder_corrector(x)
+    lambda x: participant_corrector(x)
 )
 
 gaze_copy = pd.merge(
@@ -139,7 +158,9 @@ max_streak = streak_tag.groupby("tag").max()
 # Mean streak by feature
 mean_streak = streak_tag.groupby("tag").mean()
 
-# Records amplitude of saccades by feature
+# Number of streaks per feature
+
+# Amplitude of saccades by feature
 gaze_copy["saccade time(s)"] = gaze_copy["duration(s)"]
 gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
 gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
@@ -158,35 +179,70 @@ gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction
 gaze_copy.drop(["direction x", "direction y"], axis=1)
 
 # Total % time spent on each feature plotted (all)
-percent_time = percent_time.to_frame()
-percent_time = percent_time.reset_index()
-percent_time.columns = ["tag", "% time"]
-plt.bar(percent_time["tag"], percent_time["% time"])
+gaze_plot = (
+    gaze_copy[["tag", "duration(s)", "sesso"]].reset_index().drop("level_1", axis=1)
+)
+time_per_participant = gaze_plot.groupby(["participant_folder", "tag"]).agg(
+    {"duration(s)": "sum"}
+)
+time_per_participant["percentage"] = (
+    time_per_participant["duration(s)"] / total_time
+) * 100
+total_percent_plot = time_per_participant.boxplot(
+    column="percentage", by="tag", grid=False
+)
+plt.title("% Time Spent Looking at Each Feature (All Participants)")
+plt.suptitle("")
 plt.xlabel("Feature")
 plt.ylabel("% Time Spent Looking")
-plt.title("% Time Spent Looking at Each Feature (All Participants)")
 plt.savefig("%_time_plot.png")
 plt.show()
 
 # Mean streak duration for each feature plotted (all)
-mean_streak = mean_streak.reset_index()
-plt.bar(mean_streak["tag"], mean_streak["duration(s)"])
+mean_streak_plot = streak_tag.boxplot(column="duration(s)", by="tag", grid=False)
+plt.title("Mean Streak Duration by Feature (All Participants)")
+plt.suptitle("")
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
-plt.title("Mean Streak Duration by Feature (All Participants)")
 plt.savefig("mean_streak_plot.png")
 plt.show()
 
 # Mean duration spent looking at each feature plotted (all)
-features = features.reset_index()
-plt.bar(features["tag"], features["mean duration(s)"])
+mean_dur_plot = time_per_participant.boxplot(column="duration(s)", by="tag", grid=False)
+plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
+plt.suptitle("")
 plt.xlabel("Feature")
 plt.ylabel("Duration(s)")
-plt.title("Mean Duration Spent Looking at Each Feature (All Participants)")
 plt.savefig("mean_dur_plot.png")
 plt.show()
 
 # Percent time spent on each feature in men vs. women plotted
+time_women = gaze_plot[gaze_plot["sesso"] == "f"]
+time_per_woman = time_women.groupby(["participant_folder", "tag"]).agg(
+    {"duration(s)": "sum"}
+)
+time_per_woman["percentage"] = (time_per_woman["duration(s)"] / total_time) * 100
+women_percent_plot = time_per_woman.boxplot(column="percentage", by="tag", grid=False)
+plt.title("% Time Spent Looking at Each Feature (Women)")
+plt.suptitle("")
+plt.xlabel("Feature")
+plt.ylabel("Duration(s)")
+plt.savefig("%_time_women.png")
+plt.show()
+
+time_men = gaze_plot[gaze_plot["sesso"] == "m"]
+time_per_man = time_men.groupby(["participant_folder", "tag"]).agg(
+    {"duration(s)": "sum"}
+)
+time_per_man["percentage"] = (time_per_man["duration(s)"] / total_time) * 100
+men_percent_plot = time_per_man.boxplot(column="percentage", by="tag", grid=False)
+plt.title("% Time Spent Looking at Each Feature (Men)")
+plt.suptitle("")
+plt.xlabel("Feature")
+plt.ylabel("Duration(s)")
+plt.savefig("%_time_men.png")
+plt.show()
+
 percent_f = percent_f.to_frame()
 percent_f = percent_f.reset_index()
 percent_f.columns = ["tag", "Women"]
@@ -202,7 +258,7 @@ percent_fvm.plot(
     xlabel="Feature",
     ylabel="% Time Spent",
 )
-plt.savefig("%_time_mvf.png")
+plt.savefig("%_time_mvf_bar.png")
 
 # Most looked at feature by age group table
 gaze_copy["age group"] = pd.cut(
