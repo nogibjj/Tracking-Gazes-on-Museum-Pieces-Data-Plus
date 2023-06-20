@@ -8,7 +8,7 @@ import pandas as pd
 import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
-ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
+# ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data - tagging exercise"
 
 MEMBER_FLAG = "ERIC"
 participant_paths_folders = []
@@ -28,10 +28,6 @@ for folder in os.listdir(ROOT_PATH):
 checkpoint = False
 last_folder = None
 
-if checkpoint:
-    index_change = participant_paths_folders.index(last_folder)
-
-    participant_paths_folders = participant_paths_folders[index_change + 1 :]
 
 participant_list = []
 
@@ -63,6 +59,14 @@ if MEMBER_FLAG == "APRIL":
 
 elif MEMBER_FLAG == "ERIC":
     participant_list = participant_list[bulk_count:]
+
+if checkpoint:
+    with open("tagger_last_folder.txt", "r") as f:
+        last_folder = f.read()
+
+    index_change = participant_paths_folders.index(last_folder)
+
+    participant_paths_folders = participant_paths_folders[index_change + 1 :]
 
 for folder in participant_paths_folders:
     files = os.listdir(folder)
@@ -106,9 +110,13 @@ for folder in participant_paths_folders:
             break
 
         elif key == ord("5"):
+            cv2.destroyAllWindows()
             img = reset_img.copy()
-            cv2.imshow("image", img)
             print("You have reset the image")
+            cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
+            cv2.resizeWindow("image", width, height)
+            cv2.setMouseCallback("image", drawfunction, param)
+            # cv2.imshow("image", img)
 
         elif key == ord("9"):
             flag = False
@@ -155,5 +163,7 @@ for folder in participant_paths_folders:
     # https://pbpython.com/market-basket-analysis.html
 
     last_folder = folder
+    with open("tagger_last_folder.txt", "w") as f:
+        f.write(last_folder)
 
     print(f"Finished generating tags for  {participant_id}")
