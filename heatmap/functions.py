@@ -4,21 +4,27 @@ This script contains helper functions used by the draw_heatmap.py script
 """
 import sys
 import os
+import traceback
 import cv2
 import pandas as pd
 import numpy as np
+
 
 def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=True):
     """
     Simple function to convert the ns linux timestamp datetype to
     normal milliseconds of elapsed time
     """
-    gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
-    start_timestamp = gaze_df[col_name][0]
-    if subtract:
-        gaze_df[col_name] = gaze_df[col_name] - start_timestamp
-    gaze_df[col_name] = gaze_df[col_name].astype(np.int64) / int(1e6)
-    return gaze_df
+    try:
+        gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
+        start_timestamp = gaze_df[col_name][0]
+        if subtract:
+            gaze_df[col_name] = gaze_df[col_name] - start_timestamp
+        gaze_df[col_name] = gaze_df[col_name].astype(np.int64) / int(1e6)
+        return gaze_df
+    except:
+        print(traceback.print_exc())
+        return pd.DataFrame()
 
 
 def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
@@ -28,24 +34,28 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     Draws a bounding box of the specified size around that specific pixel location
     and returns the bounding box as a cropped image.
     """
-    current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
-    closet_value = min(
-        gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
-    )
+    try:
+        current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+        closet_value = min(
+            gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
+        )
 
-    closest_row = pd.DataFrame(
-        gaze_df[gaze_df["timestamp [ns]"] == closet_value].reset_index()
-    )
-    x_pixel = round(closest_row["gaze x [px]"][0])
-    y_pixel = round(closest_row["gaze y [px]"][0])
-    # ToDo: Modify the bounding box to make it large but dynamic enough to make it smaller closer
-    # to the edges of the image (if the bb size is 250 at the edges, nothings gets drawn)
-    template = curr_frame[
-        y_pixel - bounding_size // 2 : y_pixel + bounding_size // 2,
-        x_pixel - bounding_size // 2 : x_pixel + bounding_size // 2,
-    ]
+        closest_row = pd.DataFrame(
+            gaze_df[gaze_df["timestamp [ns]"] == closet_value].reset_index()
+        )
+        x_pixel = round(closest_row["gaze x [px]"][0])
+        y_pixel = round(closest_row["gaze y [px]"][0])
+        # ToDo: Modify the bounding box to make it large but dynamic enough to make it smaller closer
+        # to the edges of the image (if the bb size is 250 at the edges, nothings gets drawn)
+        template = curr_frame[
+            y_pixel - bounding_size // 2 : y_pixel + bounding_size // 2,
+            x_pixel - bounding_size // 2 : x_pixel + bounding_size // 2,
+        ]
 
-    return template, closest_row
+        return template, closest_row
+    except:
+        print(traceback.print_exc())
+        return np.array([]), pd.Series()
 
 
 def get_closest_reference_pixel(target, template, chosen_method=1):
@@ -53,29 +63,35 @@ def get_closest_reference_pixel(target, template, chosen_method=1):
     Compares the cropped image from the above function to the reference image
     and returns the pixel locations that most closely matches it
     """
-    methods = [
-        "cv2.TM_CCOEFF",
-        "cv2.TM_CCOEFF_NORMED",
-        "cv.TM_CCORR",
-        "cv2.TM_CCORR_NORMED",
-        "cv2.TM_SQDIFF",
-        "cv2.TM_SQDIFF_NORMED",
-    ]
-    width, height, _ = template.shape[::-1]
-    method = eval(methods[chosen_method])
-    res = cv2.matchTemplate(target, template, method)
-    _, _, min_loc, max_loc = cv2.minMaxLoc(res)
-    # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
-    if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-        top_left = min_loc
-    else:
-        top_left = max_loc
-    bottom_right = (top_left[0] + width, top_left[1] + height)
-    center = (
-        int((top_left[0] + bottom_right[0]) / 2),
-        int((top_left[1] + bottom_right[1]) / 2),
-    )
-    return center
+    try:
+        methods = [
+            "cv2.TM_CCOEFF",
+            "cv2.TM_CCOEFF_NORMED",
+            "cv.TM_CCORR",
+            "cv2.TM_CCORR_NORMED",
+            "cv2.TM_SQDIFF",
+            "cv2.TM_SQDIFF_NORMED",
+        ]
+        width, height, _ = template.shape[::-1]
+        method = eval(methods[chosen_method])
+        res = cv2.matchTemplate(target, template, method)
+        _, _, min_loc, max_loc = cv2.minMaxLoc(res)
+        # If the method is TM_SQDIFF or TM_SQDIFF_NORMED, take minimum
+        if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+            top_left = min_loc
+        else:
+            top_left = max_loc
+        bottom_right = (top_left[0] + width, top_left[1] + height)
+        center = (
+            int((top_left[0] + bottom_right[0]) / 2),
+            int((top_left[1] + bottom_right[1]) / 2),
+        )
+        return center
+
+    except:
+        print("template shape: ", template.shape, "target shape: ", target.shape)
+        print(traceback.print_exc())
+        return None
 
 
 def normalize_heatmap_dict(pixel_heatmap):
@@ -83,36 +99,44 @@ def normalize_heatmap_dict(pixel_heatmap):
     Function to normalize the data between a given range to encode the
     gradient for the heatmap
     """
-    EPSILON = sys.float_info.epsilon  # Smallest possible difference.
-    colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
-    minval = pixel_heatmap[min(pixel_heatmap, key=pixel_heatmap.get)]
-    maxval = min(pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)], 255)
+    try:
+        EPSILON = sys.float_info.epsilon  # Smallest possible difference.
+        colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
+        minval = pixel_heatmap[min(pixel_heatmap, key=pixel_heatmap.get)]
+        maxval = min(pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)], 255)
 
-    for key, val in pixel_heatmap.items():
-        i_f = float(val - minval) / float(maxval - minval) * (len(colors) - 1)
-        ##### i_f = abs(255 - i_f)
-        ##### pixel_heatmap[key] = (255, i_f, i_f)
+        for key, val in pixel_heatmap.items():
+            i_f = float(val - minval) / float(maxval - minval) * (len(colors) - 1)
+            ##### i_f = abs(255 - i_f)
+            ##### pixel_heatmap[key] = (255, i_f, i_f)
 
-        i, f = int(i_f // 1), i_f % 1
-        if f < EPSILON:
-            pixel_heatmap[key] = colors[i]
-        else:
-            (r1, g1, b1), (r2, g2, b2) = colors[i], colors[i + 1]
-            pixel_heatmap[key] = (
-                int(r1 + f * (r2 - r1)),
-                int(g1 + f * (g2 - g1)),
-                int(b1 + f * (b2 - b1)),
-            )
-    return pixel_heatmap
+            i, f = int(i_f // 1), i_f % 1
+            if f < EPSILON:
+                pixel_heatmap[key] = colors[i]
+            else:
+                (r1, g1, b1), (r2, g2, b2) = colors[i], colors[i + 1]
+                pixel_heatmap[key] = (
+                    int(r1 + f * (r2 - r1)),
+                    int(g1 + f * (g2 - g1)),
+                    int(b1 + f * (b2 - b1)),
+                )
+        return pixel_heatmap
+    except:
+        print(traceback.print_exc())
+        return pixel_heatmap
 
 
 def draw_heatmap_on_ref_img(pixel_heatmap, first_frame, bounding_size=3):
     """
     Function to draw the heatmap on the reference image based on the pixel locations
     """
-    for key, value in pixel_heatmap.items():
-        op_frame = cv2.circle(first_frame, key, bounding_size, value, 2)
-    return op_frame
+    try:
+        for key, value in pixel_heatmap.items():
+            op_frame = cv2.circle(first_frame, key, bounding_size, value, 2)
+        return op_frame
+    except:
+        print(traceback.print_exc())
+        return first_frame
 
 
 def create_directory(directory):
@@ -139,6 +163,39 @@ def resample_gaze(
     gaze_df = gaze_df[required_cols].resample(resample_freq).mean().reset_index()
     gaze_df[timestamp_col] = gaze_df[timestamp_col].astype(np.int64)
     return gaze_df
+
+
+def save_outputs(
+    ROOT_PATH,
+    name,
+    first_frame,
+    DETECT_BOUNDING_SIZE,
+    final_img,
+    updated_gaze,
+    TEMP_OUTPUT_DIR,
+):
+    """
+    Function to save all the required outputs in a temp and original folder
+    """
+    ### Write the outputs to the original data folder
+    cv2.imwrite(
+        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
+    )
+    cv2.imwrite(
+        os.path.join(
+            ROOT_PATH,
+            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
+        ),
+        final_img,
+    )
+    updated_gaze.to_csv(
+        os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}.csv"), index=False
+    )
+
+    ### Write the data to the temp output folder
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
+    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
 
 
 """
