@@ -9,6 +9,7 @@ import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
 
+MEMBER_FLAG = "APRIL"
 participant_paths_folders = []
 
 for folder in os.listdir(ROOT_PATH):
@@ -31,13 +32,47 @@ if checkpoint:
 
     participant_paths_folders = participant_paths_folders[index_change + 1 :]
 
-for folder in participant_paths_folders[0:1]:
+participant_list = []
+
+# fixing news issue - Warning - Temporary fix
+for folder in participant_paths_folders:
+    files = os.listdir(folder)
+    participant_id = folder.split("\\")[-1]
+    if "new" in participant_id:
+        print(f"Fixing participant id -- {participant_id}")
+        temp = participant_id.replace("new", "")
+        flip_flag = False
+        for id in participant_list:
+            if temp in id:
+                print(f"Replacing {id} with {participant_id}")
+                ind = participant_list.index(id)
+                flip_flag = True
+                participant_list.pop(ind)
+                participant_list.append(participant_id)
+        if not (flip_flag):
+            participant_list.append(participant_id)
+            flip_flag = False
+    else:
+        participant_list.append(participant_id)
+
+bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
+
+if MEMBER_FLAG == "APRIL":
+    participant_list = participant_list[0:bulk_count]
+
+elif MEMBER_FLAG == "ERIC":
+    participant_list = participant_list[bulk_count:]
+
+for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split("\\")[-1]
     feature_coordinates = []
     drawing = True
     flag = True
     list_finished = False
+    if participant_id not in participant_list:
+        print(f"Skipping folder -- {folder}")
+        continue
 
     for single_file in files:
         if "reference_image" in single_file:
