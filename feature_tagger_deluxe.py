@@ -8,6 +8,7 @@ import pandas as pd
 import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
+ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
 
 MEMBER_FLAG = "APRIL"
 participant_paths_folders = []
