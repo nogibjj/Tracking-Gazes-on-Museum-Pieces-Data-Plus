@@ -34,9 +34,9 @@ from config import *
 # Set env variables based on config file
 try:
     env = sys.argv[1]
-    env_var = eval(env+'_config')
+    env_var = eval(env + "_config")
 except:
-    print('Enter valid env variable. Refer to classes in the config.py file')
+    print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
 
 create_directory(env_var.TEMP_OUTPUT_DIR)
@@ -85,7 +85,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
                 cap, curr_frame, gaze_df, env_var.DETECT_BOUNDING_SIZE
             )
 
-            if not gaze_object_crop.any() or closest_row.empty: 
+            if not gaze_object_crop.any() or closest_row.empty:
                 continue
 
             ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
@@ -120,5 +120,3 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         updated_gaze,
         env_var.TEMP_OUTPUT_DIR,
     )
-
-
