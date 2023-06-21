@@ -39,6 +39,8 @@ participant_paths_folders = sorted(participant_paths_folders)
 for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split("\\")[-1]
+    if MEMBER_FLAG == "APRIL_2.0":
+        participant_id = folder.split("/")[-1]
     if "new" in participant_id:
         print(f"Fixing participant id -- {participant_id}")
         temp = participant_id.replace("new", "")
