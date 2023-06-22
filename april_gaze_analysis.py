@@ -4,7 +4,6 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
-from auxiliary_analysis_functions import fake_tagger
 
 
 # Groupby function
@@ -22,9 +21,7 @@ def modify(df):
 # Feature with highest number of fixations
 all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
-# all_gaze = fake_tagger(all_gaze)
 all_gaze.reset_index(drop=True, inplace=True)
-mode = all_gaze["tag"].mode()
 modes = all_gaze["tag"].value_counts()
 
 all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
@@ -93,7 +90,11 @@ gaze_copy = pd.merge(
     how="left",
 )
 
-gaze_copy = gaze_copy.iloc[:, :-1]
+gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
+
+# fixation analysis
+gaze_copy = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+gaze_copy["fixation id"].value_counts(dropna=False)
 
 # Percent time spent on each feature
 gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
@@ -102,6 +103,10 @@ gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
 gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
 gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
+
+# This block answers, after summing the durations across all videos
+# across all fixations, what percent of time was spent fixating
+# on a specific feature
 # Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
 gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
 gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
@@ -111,27 +116,52 @@ feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 total_time = gaze_copy["duration(s)"].sum()
 percent_time = (feature_time / total_time) * 100
 
+
+# Same extension for women
 # Percent time spent on each feature in women
 gaze_f = gaze_copy[gaze_copy["sesso"] == "f"]
 feature_f = gaze_f.groupby("tag")["duration(s)"].sum()
 total_f = gaze_f["duration(s)"].sum()
 percent_f = (feature_f / total_f) * 100
 
+# Same extension for men
 # Percent time spent on each feature in men
 gaze_m = gaze_copy[gaze_copy["sesso"] == "m"]
 feature_m = gaze_m.groupby("tag")["duration(s)"].sum()
 total_m = gaze_m["duration(s)"].sum()
 percent_m = (feature_m / total_m) * 100
 
-# Mean fixation duration of looking at each feature
-feature_freq = gaze_copy["tag"].value_counts()
-features = pd.concat([feature_time, feature_freq], axis=1)
-features["mean fix duration(s)"] = features["duration(s)"] / features["count"]
 
-# Mean duration of looking at each feature
-features["mean duration(s)"] = (
-    features["duration(s)"] / gaze_copy["participant_folder"].nunique()
-)
+# Saving percent time metrics to csv
+round(percent_time, 2).to_csv("percent_time.csv")
+round(percent_f, 2).to_csv("percent_time_f.csv")
+round(percent_m, 2).to_csv("percent_time_m.csv")
+
+
+##### Mean fixation duration of looking at each feature
+
+# feature_freq = gaze_copy["tag"].value_counts() # FIX ONLY THIS
+
+# feature time adds the durations
+# feature freq is not the right count to produce this average
+# Here is the current fix, which counts unique fixations on
+# the target feature
+feature_freq = gaze_copy.groupby(["tag"])["fixation id"].nunique()
+features = pd.concat([feature_time, feature_freq], axis=1)
+features["mean fix duration(s)"] = features["duration(s)"] / features["fixation id"]
+
+# Saving mean fixation duration metrics to csv
+features.to_csv("mean_fix_duration.csv")
+
+
+# The following block would be
+# if fixed the mean durations of the fixations per the features per participant
+
+# # Mean duration of looking at each feature
+# features["mean duration(s)"] = (
+#     features["duration(s)"] / gaze_copy["participant_folder"].nunique()
+# )
+
 
 # Individual streak durations for each feature
 gaze_copy["start of streak"] = gaze_copy["tag"].ne(gaze_copy["tag"].shift())
@@ -272,3 +302,10 @@ mode_by_age = gaze_copy.groupby(["age group"])["tag"].agg(pd.Series.mode)
 mode_ft_age = pd.DataFrame(ages, columns=["Age"])
 mode_ft_age["Feature"] = mode_by_age.tolist()
 mode_ft_age.to_csv("mode_feature_by_age.csv", index=False)
+
+
+# Commented out for now, leaving the general section at the end
+# # The same applies here, but for a general feature.
+# feature_time_general = gaze_copy.groupby("general tag")["duration(s)"].sum()
+# total_time = gaze_copy["duration(s)"].sum()
+# percent_time_general = (feature_time_general / total_time) * 100

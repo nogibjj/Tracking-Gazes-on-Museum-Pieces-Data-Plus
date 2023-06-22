@@ -6,12 +6,26 @@ import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
+import sys
+from heatmap.config import *
+from heatmap.functions import create_directory
+
+# Set env variables based on config file
+try:
+    env = sys.argv[1]
+    env_var = eval(env + "_config")
+except:
+    print("Enter valid env variable. Refer to classes in the config.py file")
+    sys.exit()
+
+# create_directory(env_var.TEMP_OUTPUT_DIR)
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
+ROOT_PATH = env_var.ROOT_PATH
 # ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data - tagging exercise"
 
 # MEMBER_FLAG = "APRIL_2.0"
-MEMBER_FLAG = ""
+MEMBER_FLAG = env
 participant_paths_folders = []
 
 for folder in os.listdir(ROOT_PATH):
@@ -39,7 +53,7 @@ participant_paths_folders = sorted(participant_paths_folders)
 for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split("\\")[-1]
-    if MEMBER_FLAG == "APRIL_2.0":
+    if MEMBER_FLAG.lower() is not "eric":
         participant_id = folder.split("/")[-1]
     if "new" in participant_id:
         print(f"Fixing participant id -- {participant_id}")
@@ -58,72 +72,6 @@ for folder in participant_paths_folders:
     else:
         participant_list.append(participant_id)
 
-
-# bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
-
-# if MEMBER_FLAG == "APRIL":
-#     participant_list = participant_list[0:bulk_count]
-
-# elif MEMBER_FLAG == "ERIC":
-#     participant_list = participant_list[bulk_count:]
-
-if MEMBER_FLAG == "APRIL_2.0":
-    special_log = [
-        "2022_34bm",
-        "2022_18b1m",
-        "2022_11bm",
-        "2022_15bm",
-        "2021_5bmnew",
-        "2022_05bm",
-        "2021_1bm",
-        "2022_20bm",
-        "2021_01bmf",
-        "2022_24bm",
-        "2022_18bm",
-        "2022_12bm",
-        "2022-41bm",
-        "2022_33bm",
-        "2022_39bm",
-        "2022_30bm_",
-        "2022_16bm",
-        "2022_23bm",
-        "2022_29bm",
-        "2022_01bmnew",
-        "2021_2bm",
-        "2022_06bm",
-        "2022_17b1m",
-        "2022_08bm",
-        "2022_02bm",
-        "2022_27bm",
-        "2022_13bm",
-        "2022_19bm",
-        "2022_38bmnew",
-        "2022_30b",
-        "2022_32bm",
-        "2022_10b1m",
-        "2022_17bm",
-        "2022_28bm",
-        "2022_22bm",
-        "2022_07bm",
-    ]
-
-    no_one_left_behind = 0
-    for member in special_log:
-        if member not in participant_list:
-            no_one_left_behind += 1
-    assert no_one_left_behind == 0
-
-    new_participant_list = []
-    for member in participant_list:
-        if member not in special_log:
-            new_participant_list.append(member)
-
-    assert len(new_participant_list) == len(participant_list) - len(special_log)
-
-    new_participant_list = sorted(new_participant_list)
-
-    participant_list = new_participant_list
-
 if checkpoint:
     with open("tagger_last_folder.txt", "r") as f:
         last_folder = f.read()
@@ -135,6 +83,8 @@ if checkpoint:
 for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split("\\")[-1]
+    if MEMBER_FLAG.lower() is not "eric":
+        participant_id = folder.split("/")[-1]
     feature_coordinates = []
     drawing = True
     flag = True
