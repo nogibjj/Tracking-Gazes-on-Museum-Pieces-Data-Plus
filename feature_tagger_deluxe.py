@@ -8,10 +8,10 @@ import pandas as pd
 import datetime as dt
 
 ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
-ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data - tagging exercise"
+# ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data - tagging exercise"
 
-MEMBER_FLAG = "APRIL_2.0"
-
+# MEMBER_FLAG = "APRIL_2.0"
+MEMBER_FLAG = ""
 participant_paths_folders = []
 
 for folder in os.listdir(ROOT_PATH):

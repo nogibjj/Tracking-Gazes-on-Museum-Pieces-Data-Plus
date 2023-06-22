@@ -12,88 +12,12 @@ import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
-
-ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
-# ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
-
-# MEMBER_FLAG = "ERIC"
-participant_paths_folders = []
-
-for folder in os.listdir(ROOT_PATH):
-    try:
-        new_path = os.path.join(ROOT_PATH, folder)
-        os.listdir(new_path)
-        print(f"Running for folder -- {folder}")
-        print(f"{folder} is a directory")
-        participant_paths_folders.append(new_path)
-
-    except:
-        print(f"{folder} is a file")
-        continue
-
-checkpoint = False
-last_folder = None
-participant_paths_folders = sorted(participant_paths_folders)
-
-if checkpoint:
-    index_change = participant_paths_folders.index(last_folder)
-
-    participant_paths_folders = participant_paths_folders[index_change + 1 :]
-
-participant_list = []
-
-# fixing news issue - Warning - Temporary fix
-for folder in participant_paths_folders:
-    files = os.listdir(folder)
-    participant_id = folder.split("\\")[-1]
-    if "new" in participant_id:
-        print(f"Fixing participant id -- {participant_id}")
-        temp = participant_id.replace("new", "")
-        flip_flag = False
-        for id in participant_list:
-            if temp in id:
-                print(f"Replacing {id} with {participant_id}")
-                ind = participant_list.index(id)
-                flip_flag = True
-                participant_list.pop(ind)
-                participant_list.append(participant_id)
-        if not (flip_flag):
-            participant_list.append(participant_id)
-            flip_flag = False
-    else:
-        participant_list.append(participant_id)
-
-# bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
-
-# if MEMBER_FLAG == "APRIL":
-#     participant_list = participant_list[0:bulk_count]
-
-# elif MEMBER_FLAG == "ERIC":
-#     participant_list = participant_list[bulk_count:]
-
-for folder in participant_paths_folders:
-    files = os.listdir(folder)
-    participant_id = folder.split("\\")[-1]
-
-    if participant_id not in participant_list:
-        print(f"Skipping folder -- {folder}")
-        continue
-
-
-user_tag_coordinates = pd.read_csv("tags.csv")
-
-# assuming a group reference image
-# or a participant reference image
-# is received, this code should work agnostically
-
-# test
-# participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
-participant_reference_gaze_csv = pd.read_csv("gaze_csv_tag_exp_sb.csv")
+import re
 
 
 def ref_coordinate_processing(gaze_reference_df):
     gaze_reference_df["ref_coordinates"] = pd.Series(
-        zip(gaze_reference_df["ref_x_pixel"], gaze_reference_df["ref_y_pixel"])
+        zip(gaze_reference_df["ref_center_x"], gaze_reference_df["ref_center_y"])
     )
 
     x_coordinates_from_tuple = [
@@ -104,9 +28,9 @@ def ref_coordinate_processing(gaze_reference_df):
         i[1] for i in gaze_reference_df["ref_coordinates"].values.tolist()
     ]
 
-    assert gaze_reference_df["ref_x_pixel"].values.tolist() == x_coordinates_from_tuple
+    assert gaze_reference_df["ref_center_x"].values.tolist() == x_coordinates_from_tuple
 
-    assert gaze_reference_df["ref_y_pixel"].values.tolist() == y_coordinates_from_tuple
+    assert gaze_reference_df["ref_center_y"].values.tolist() == y_coordinates_from_tuple
 
     return gaze_reference_df
 
@@ -244,11 +168,112 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
     return name
 
 
-participant_reference_gaze_csv = ref_coordinate_processing(
-    participant_reference_gaze_csv
-)
+ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
+# ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
 
+# MEMBER_FLAG = "ERIC"
+participant_paths_folders = []
 
-participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
-    "ref_coordinates"
-].apply(lambda x: gaze_tagger(x, user_tag_coordinates))
+for folder in os.listdir(ROOT_PATH):
+    try:
+        new_path = os.path.join(ROOT_PATH, folder)
+        os.listdir(new_path)
+        print(f"Running for folder -- {folder}")
+        print(f"{folder} is a directory")
+        participant_paths_folders.append(new_path)
+
+    except:
+        print(f"{folder} is a file")
+        continue
+
+checkpoint = False
+last_folder = None
+participant_paths_folders = sorted(participant_paths_folders)
+
+if checkpoint:
+    index_change = participant_paths_folders.index(last_folder)
+
+    participant_paths_folders = participant_paths_folders[index_change + 1 :]
+
+participant_list = []
+
+# fixing news issue - Warning - Temporary fix
+for folder in participant_paths_folders:
+    files = os.listdir(folder)
+    participant_id = folder.split("\\")[-1]
+    if "new" in participant_id:
+        print(f"Fixing participant id -- {participant_id}")
+        temp = participant_id.replace("new", "")
+        flip_flag = False
+        for id in participant_list:
+            if temp in id:
+                print(f"Replacing {id} with {participant_id}")
+                ind = participant_list.index(id)
+                flip_flag = True
+                participant_list.pop(ind)
+                participant_list.append(participant_id)
+        if not (flip_flag):
+            participant_list.append(participant_id)
+            flip_flag = False
+    else:
+        participant_list.append(participant_id)
+
+# bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
+
+# if MEMBER_FLAG == "APRIL":
+#     participant_list = participant_list[0:bulk_count]
+
+# elif MEMBER_FLAG == "ERIC":
+#     participant_list = participant_list[bulk_count:]
+
+for folder in participant_paths_folders:
+    files = os.listdir(folder)
+    participant_id = folder.split("\\")[-1]  # fix for future reference
+    # print(files)
+    if participant_id not in participant_list:
+        print(f"Skipping folder -- {folder}")
+        continue
+
+    most_recent_tag_file = None
+    most_recent_date = None
+    for file in files:
+        if "tags_coordinates" in file and ".csv" in file:
+            extracted_date = re.findall(
+                "tags_coordinates_(.+)\.csv", "tags_coordinates_2023-06-20_11-41-42.csv"
+            )[0]
+            parsed_date = dt.datetime.strptime(extracted_date, "%Y-%m-%d_%H-%M-%S")
+
+            if most_recent_date is None and most_recent_tag_file is None:
+                most_recent_tag_file = file
+                most_recent_date = parsed_date
+
+            elif parsed_date > most_recent_date:
+                most_recent_tag_file = file
+                most_recent_date = parsed_date
+
+        elif "updated_gaze" in file and ".csv" in file:  # add participant as condition
+            participant_reference_gaze_csv = pd.read_csv(os.path.join(folder, file))
+
+    tag_file_path = os.path.join(folder, most_recent_tag_file)
+    print(tag_file_path)
+    user_tag_coordinates = pd.read_csv(tag_file_path)
+
+    # assuming a group reference image
+    # or a participant reference image
+    # is received, this code should work agnostically
+
+    # test
+    # participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
+    # participant_reference_gaze_csv = pd.read_csv("gaze_csv_tag_exp_sb.csv")
+
+    participant_reference_gaze_csv = ref_coordinate_processing(
+        participant_reference_gaze_csv
+    )
+
+    participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
+        "ref_coordinates"
+    ].apply(lambda x: gaze_tagger(x, user_tag_coordinates))
+
+    participant_reference_gaze_csv.to_csv(os.path.join(folder, "final_gaze_tagged.csv"))
+
+    print("Done for folder -- ", folder)
