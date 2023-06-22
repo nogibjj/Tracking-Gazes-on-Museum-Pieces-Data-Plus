@@ -22,9 +22,10 @@ def modify(df):
 # Feature with highest number of fixations
 all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
-all_gaze = fake_tagger(all_gaze)
+# all_gaze = fake_tagger(all_gaze)
 all_gaze.reset_index(drop=True, inplace=True)
 mode = all_gaze["tag"].mode()
+modes = all_gaze["tag"].value_counts()
 
 
 def participant_folder_corrector(input_string):
