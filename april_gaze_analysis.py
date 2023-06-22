@@ -27,6 +27,8 @@ all_gaze.reset_index(drop=True, inplace=True)
 mode = all_gaze["tag"].mode()
 modes = all_gaze["tag"].value_counts()
 
+all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
+
 
 def participant_folder_corrector(input_string):
     """Add a 0 after the underscore in participant_folder"""
