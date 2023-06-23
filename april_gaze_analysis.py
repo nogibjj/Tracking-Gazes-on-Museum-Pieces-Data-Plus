@@ -97,7 +97,7 @@ gaze_copy = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
 gaze_copy["fixation id"].value_counts(dropna=False)
 
 # Percent time spent on each feature
-gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
+gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
 gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
@@ -162,7 +162,7 @@ features.to_csv("mean_fix_duration.csv")
 #     features["duration(s)"] / gaze_copy["participant_folder"].nunique()
 # )
 
-
+# Evaluating if this section can be modified to answer a question
 # Individual streak durations for each feature
 gaze_copy["start of streak"] = gaze_copy["tag"].ne(gaze_copy["tag"].shift())
 gaze_copy["streak id"] = gaze_copy["start of streak"].cumsum()
@@ -222,7 +222,7 @@ time_per_participant["percentage"] = (
     time_per_participant["duration(s)"] / total_time
 ) * 100
 total_percent_plot = time_per_participant.boxplot(
-    column="percentage", by="tag", grid=False
+    column="duration(s)", by="tag", grid=False, figsize=(10, 10), vert=False
 )
 plt.title("% Time Spent Looking at Each Feature (All Participants)")
 plt.suptitle("")
@@ -232,7 +232,9 @@ plt.savefig("%_time_plot.png")
 plt.show()
 
 # Mean streak duration for each feature plotted (all)
-mean_streak_plot = streak_tag.boxplot(column="duration(s)", by="tag", grid=False)
+mean_streak_plot = streak_tag.boxplot(
+    column="duration(s)", by="tag", grid=False, figsize=(10, 10), vert=False
+)
 plt.title("Mean Streak Duration by Feature (All Participants)")
 plt.suptitle("")
 plt.xlabel("Feature")

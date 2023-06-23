@@ -16,6 +16,7 @@ def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=True
     normal milliseconds of elapsed time
     """
     try:
+        gaze_df[col_name + "_for_grouping"] = gaze_df[col_name]
         gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
         start_timestamp = gaze_df[col_name][0]
         if subtract:

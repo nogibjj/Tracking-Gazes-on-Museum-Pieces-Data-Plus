@@ -7,13 +7,13 @@ import glob
 from repository_finder import repository_details
 
 
-def timestamp_corrector(gaze_csv_path):
+def timestamp_corrector(gaze_csv_path, col_name="timestamp [ns]_for_grouping"):
     """Process the unix timestamps
     and create seconds columns to facilitate
     generation of descriptive statistics"""
 
     gaze_copy = pd.read_csv(gaze_csv_path)
-    gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
+    gaze_copy["ts"] = gaze_copy[col_name].apply(
         lambda x: dt.datetime.fromtimestamp(x / 1000000000)
     )
     baseline = gaze_copy["ts"][0]
