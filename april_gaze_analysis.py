@@ -22,6 +22,31 @@ def modify(df):
 all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
+
+
+# tag mapping to words, to be erased later on
+mapping = {
+    "r base": "right base",
+    "noise": "noise",
+    "m r hand": "male right hand",
+    "m l hand": "male left hand",
+    "l base": "left base",
+    "m feet": "male feet",
+    "m face": "male face",
+    "m chest": "male chest",
+    "lights": "lights",
+    "guy": "corner stranger",
+    "f r hand": "female right hand",
+    "f l hand": "female left hand",
+    "f feet": "female feet",
+    "f face": "female face",
+    "f chest": "female chest",
+    "crack": "asymmetric fissure",
+    "bg": "background",
+}
+
+all_gaze["tag"] = all_gaze["tag"].map(mapping)
+
 modes = all_gaze["tag"].value_counts()
 
 all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
@@ -113,6 +138,7 @@ gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseco
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
 gaze_copy.drop("duration(micro)", axis=1)
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
+fixation_time = gaze_copy.groupby("tag")["fixation id"].sum()
 total_time = gaze_copy["duration(s)"].sum()
 percent_time = (feature_time / total_time) * 100
 
@@ -151,8 +177,43 @@ features = pd.concat([feature_time, feature_freq], axis=1)
 features["mean fix duration(s)"] = features["duration(s)"] / features["fixation id"]
 
 # Saving mean fixation duration metrics to csv
+round(features, 2).to_csv("mean_fix_duration.csv")
+new_features = round(features, 2)
+# new_features = new_features.iloc[:,-1]
 features.to_csv("mean_fix_duration.csv")
 
+# make an horizontal bar plot of the mean fixation duration
+# with the numerical values near the bars
+new_features.plot(
+    kind="barh",
+    title="Mean Fixation Duration by Feature",
+    xlabel="Feature",
+    ylabel="Duration(s)",
+)
+
+import matplotlib.pyplot as plt
+
+x = [x for x in new_features.index]
+y = [y for y in new_features["mean fix duration(s)"]]
+plt.barh(x, y)
+plt.title("Mean Fixation Duration (s) by Feature")
+for index, value in enumerate(y):
+    plt.text(value, index, str(value))
+
+plt.show()
+
+
+import matplotlib.pyplot as plt
+
+x = [x for x in fixation_time.index]
+y = [int(y) for y in fixation_time.values]
+plt.style.use("ggplot")
+plt.barh(x, y)
+plt.title("Fixation Count by Feature")
+for index, value in enumerate(y):
+    plt.text(value, index, str(value))
+
+plt.show()
 
 # The following block would be
 # if fixed the mean durations of the fixations per the features per participant
