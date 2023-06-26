@@ -12,6 +12,9 @@ instead of the actual video.
 Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-boxes-cv2-rectangle
 - QC the outputs - April?
 """
+import sys
+sys.path.insert(0, '..')
+
 from collections import defaultdict
 import os
 import glob
@@ -20,7 +23,6 @@ import pandas as pd
 import numpy as np
 import cv2
 from functions import (
-    convert_timestamp_ns_to_ms,
     get_closest_individual_gaze_object,
     get_closest_reference_pixel,
     normalize_heatmap_dict,
@@ -29,6 +31,7 @@ from functions import (
     resample_gaze,
     save_outputs,
 )
+from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
 from config import *
 
 # Set env variables based on config file

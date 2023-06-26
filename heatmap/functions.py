@@ -10,23 +10,6 @@ import pandas as pd
 import numpy as np
 
 
-def convert_timestamp_ns_to_ms(gaze_df, input_col_name="timestamp [ns]", output_col_name = 'heatmap_ts', subtract=True):
-    """
-    Simple function to convert the ns linux timestamp datetype to
-    normal milliseconds of elapsed time
-    """
-    try:
-        gaze_df[output_col_name] = pd.to_datetime(gaze_df[input_col_name])
-        start_timestamp = gaze_df[output_col_name][0]
-        if subtract:
-            gaze_df[output_col_name] = gaze_df[output_col_name] - start_timestamp
-        gaze_df[output_col_name] = gaze_df[output_col_name].astype(np.int64) / int(1e6)
-        return gaze_df
-    except:
-        print(traceback.print_exc())
-        return pd.DataFrame()
-
-
 def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size, timestamp_col='heatmap_ts'):
     """
     Function to look at the current timestamp and return the pixel locations

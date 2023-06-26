@@ -1,18 +1,23 @@
 """Creating helper functions to manipulate the Unix Timestamps
 
 Author : Eric Rios and Aditya John"""
+import traceback
+import pandas as pd
+import numpy as np
 
 
-def timestamp_corrector(gaze_csv_path, col_name="timestamp [ns]_for_grouping"):
-    """Process the unix timestamps
-    and create seconds columns to facilitate
-    generation of descriptive statistics"""
-
-    gaze_copy = pd.read_csv(gaze_csv_path)
-    gaze_copy["ts"] = gaze_copy[col_name].apply(
-        lambda x: dt.datetime.fromtimestamp(x / 1000000000)
-    )
-    baseline = gaze_copy["ts"][0]
-    gaze_copy["increment_marker"] = gaze_copy["ts"] - baseline
-    gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-    return gaze_copy
+def convert_timestamp_ns_to_ms(df, input_col_name="timestamp [ns]", output_col_name = 'heatmap_ts', subtract=True):
+    """
+    Simple function to convert the ns linux timestamp datetype to
+    normal milliseconds of elapsed time
+    """
+    try:
+        df[output_col_name] = pd.to_datetime(df[input_col_name])
+        start_timestamp = df[output_col_name][0]
+        if subtract:
+            df[output_col_name] = df[output_col_name] - start_timestamp
+        df[output_col_name] = df[output_col_name].astype(np.int64) / int(1e6)
+        return df
+    except:
+        print(traceback.print_exc())
+        return pd.DataFrame()
