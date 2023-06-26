@@ -18,8 +18,11 @@ def modify(df):
     return df
 
 
-# Feature with highest number of fixations
-all_gaze = pd.read_csv("all_gaze.csv", compression="gzip")
+import sys
+
+sys.path.insert(0, "..")
+print(sys.path)
+all_gaze = pd.read_csv("../data/all_gaze.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
 
@@ -90,8 +93,9 @@ def participant_corrector(input_string):
         return input_string.replace("_", "_0")
 
 
-demographic = pd.read_excel("demographic.xlsx")
+demographic = pd.read_excel("../data/demographic.xlsx")
 demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].fillna("none")
+demographic = demographic[demographic["codice_eyetr_museo"] != "none"]
 demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].apply(
     lambda x: participant_corrector(x)
 )
@@ -117,26 +121,38 @@ gaze_copy = pd.merge(
 
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 
-# fixation analysis
-gaze_copy = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
-gaze_copy["fixation id"].value_counts(dropna=False)
-
-# Percent time spent on each feature
+# Time spent on each feature
 gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
 gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
 gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
-
-# This block answers, after summing the durations across all videos
-# across all fixations, what percent of time was spent fixating
-# on a specific feature
+# Durations
 # Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
 gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
 gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
 gaze_copy.drop("duration(micro)", axis=1)
+
+# Fixation/saccade analysis
+gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+gaze_fixation["fixation id"].value_counts(dropna=False)
+gaze_saccade = gaze_copy[gaze_copy["fixation id"].isnull()].copy()
+
+
+# Direction of saccades
+gaze_copy["direction x"] = gaze_copy["change x"].apply(
+    lambda x: "east" if x > 0 else "west"
+)
+gaze_copy["direction y"] = gaze_copy["change y"].apply(
+    lambda y: "north" if y > 0 else "south"
+)
+gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
+gaze_copy.drop(["direction x", "direction y"], axis=1)
+
+
+"""
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 fixation_time = gaze_copy.groupby("tag")["fixation id"].sum()
 total_time = gaze_copy["duration(s)"].sum()
@@ -262,16 +278,6 @@ gaze_copy["saccade distance"] = np.sqrt(
     (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
 )
 
-# Direction of saccades
-gaze_copy["direction x"] = gaze_copy["change x"].apply(
-    lambda x: "east" if x > 0 else "west"
-)
-gaze_copy["direction y"] = gaze_copy["change y"].apply(
-    lambda y: "north" if y > 0 else "south"
-)
-gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
-gaze_copy.drop(["direction x", "direction y"], axis=1)
-
 # Total % time spent on each feature plotted (all)
 gaze_plot = (
     gaze_copy[["tag", "duration(s)", "sesso"]].reset_index().drop("level_1", axis=1)
@@ -364,7 +370,7 @@ ages = ["17-24", "25-32", "33-40", "41-48", "49-56", "57-64"]
 mode_by_age = gaze_copy.groupby(["age group"])["tag"].agg(pd.Series.mode)
 mode_ft_age = pd.DataFrame(ages, columns=["Age"])
 mode_ft_age["Feature"] = mode_by_age.tolist()
-mode_ft_age.to_csv("mode_feature_by_age.csv", index=False)
+mode_ft_age.to_csv("mode_feature_by_age.csv", index=False)"""
 
 
 # Commented out for now, leaving the general section at the end
