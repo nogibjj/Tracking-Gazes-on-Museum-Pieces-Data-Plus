@@ -10,25 +10,24 @@ import pandas as pd
 import numpy as np
 
 
-def convert_timestamp_ns_to_ms(gaze_df, col_name="timestamp [ns]", subtract=True):
+def convert_timestamp_ns_to_ms(gaze_df, input_col_name="timestamp [ns]", output_col_name = 'heatmap_ts', subtract=True):
     """
     Simple function to convert the ns linux timestamp datetype to
     normal milliseconds of elapsed time
     """
     try:
-        gaze_df[col_name + "_for_grouping"] = gaze_df[col_name]
-        gaze_df[col_name] = pd.to_datetime(gaze_df[col_name])
-        start_timestamp = gaze_df[col_name][0]
+        gaze_df[output_col_name] = pd.to_datetime(gaze_df[input_col_name])
+        start_timestamp = gaze_df[output_col_name][0]
         if subtract:
-            gaze_df[col_name] = gaze_df[col_name] - start_timestamp
-        gaze_df[col_name] = gaze_df[col_name].astype(np.int64) / int(1e6)
+            gaze_df[output_col_name] = gaze_df[output_col_name] - start_timestamp
+        gaze_df[output_col_name] = gaze_df[output_col_name].astype(np.int64) / int(1e6)
         return gaze_df
     except:
         print(traceback.print_exc())
         return pd.DataFrame()
 
 
-def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
+def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size, timestamp_col='heatmap_ts'):
     """
     Function to look at the current timestamp and return the pixel locations
     in the gaze csv that is closest to it.
@@ -38,11 +37,11 @@ def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size):
     try:
         current_timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
         closet_value = min(
-            gaze_df["timestamp [ns]"], key=lambda x: abs(x - current_timestamp)
+            gaze_df[timestamp_col], key=lambda x: abs(x - current_timestamp)
         )
 
         closest_row = pd.DataFrame(
-            gaze_df[gaze_df["timestamp [ns]"] == closet_value].reset_index()
+            gaze_df[gaze_df[timestamp_col] == closet_value].reset_index()
         )
         x_pixel = round(closest_row["gaze x [px]"][0])
         y_pixel = round(closest_row["gaze y [px]"][0])
@@ -150,7 +149,7 @@ def create_directory(directory):
 
 def resample_gaze(
     gaze_df,
-    timestamp_col="timestamp [ns]",
+    timestamp_col="heatmap_ts",
     required_cols=["gaze x [px]", "gaze y [px]"],
     resample_freq="50ms",
 ):
