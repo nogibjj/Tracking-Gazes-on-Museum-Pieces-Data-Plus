@@ -13,12 +13,13 @@ Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-b
 - QC the outputs - April?
 """
 import sys
-sys.path.insert(0, '..')
+import os
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# prepend parent directory to the system path:
+sys.path.insert(0, path)
 
 from collections import defaultdict
-import os
 import glob
-import sys
 import pandas as pd
 import numpy as np
 import cv2
