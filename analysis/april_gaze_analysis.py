@@ -70,6 +70,32 @@ gaze_copy = pd.merge(
 
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 
+
+# Pulls out participants who do not have fixation ids
+# Excludes them from analysis
+fixation_count = gaze_copy.groupby("participant_folder").sum()
+no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
+no_fixations_participants = no_fixations.loc[:, "participant_folder"]
+
+
+# Fixation/saccade dataframes
+gaze_copy = gaze_copy.assign(row_number=range(len(gaze_copy)))
+gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+gaze_fixation["fixation id"].value_counts(dropna=False)
+
+fixation_null = gaze_copy[gaze_copy["fixation id"].isnull()]
+id = gaze_copy.groupby("fixation id")
+fixation = (
+    pd.concat([id.head(1), id.tail(1)])
+    .drop_duplicates()
+    .sort_values("fixation id")
+    .reset_index(drop=True)
+)
+gaze_saccades = pd.concat([fixation_null, fixation])
+gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
+gaze_saccades = gaze_saccades.drop("row_number", axis=1)
+
+
 # Time spent on each feature
 gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
 gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
@@ -84,7 +110,8 @@ gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseco
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
 gaze_copy.drop("duration(micro)", axis=1)
 
-# Saccade calculations
+
+# Saccade distance & direction
 gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
 gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
 gaze_copy["saccade distance"] = np.sqrt(
@@ -92,14 +119,14 @@ gaze_copy["saccade distance"] = np.sqrt(
 )
 
 conditions = [
-    gaze_copy["change x"] > 0 & gaze_copy["change y"] == 0,
-    gaze_copy["change x"] < 0 & gaze_copy["change y"] == 0,
-    gaze_copy["change x"] == 0 & gaze_copy["change y"] > 0,
-    gaze_copy["change x"] == 0 & gaze_copy["change y"] < 0,
-    gaze_copy["change x"] > 0 & gaze_copy["change y"] > 0,
-    gaze_copy["change x"] > 0 & gaze_copy["change y"] < 0,
-    gaze_copy["change x"] < 0 & gaze_copy["change y"] > 0,
-    gaze_copy["change x"] < 0 & gaze_copy["change y"] < 0,
+    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] == 0),
+    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] == 0),
+    (gaze_copy["change x"] == 0) & (gaze_copy["change y"] > 0),
+    (gaze_copy["change x"] == 0) & gaze_copy["change y"] < 0,
+    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] > 0),
+    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] < 0),
+    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] > 0),
+    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] < 0),
 ]
 
 choices = [
@@ -114,23 +141,6 @@ choices = [
 ]
 
 gaze_copy["saccade direction"] = np.select(conditions, choices, "none")
-
-
-# Direction of saccades
-gaze_copy["direction x"] = gaze_copy["change x"].apply(
-    lambda x: "east" if x > 0 else "west"
-)
-gaze_copy["direction y"] = gaze_copy["change y"].apply(
-    lambda y: "north" if y > 0 else "south"
-)
-gaze_copy["direction y"] + gaze_copy["direction x"]
-gaze_copy.drop(["direction x", "direction y"], axis=1)
-
-
-# Fixation/saccade analysis
-gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
-gaze_fixation["fixation id"].value_counts(dropna=False)
-gaze_saccade = gaze_copy[gaze_copy["fixation id"].isnull()].copy()
 
 
 """
