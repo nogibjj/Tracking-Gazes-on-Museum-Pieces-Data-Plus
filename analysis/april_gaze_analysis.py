@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 # Groupby function
 def modify(df):
     df.reset_index(inplace=True, drop=True)
+    df["ts"] = pd.to_datetime(df["ts"])
     baseline = df["ts"][0]
     df["increment_marker"] = df["ts"] - baseline
     df["next time"] = df["ts"].shift(-1)
@@ -70,7 +71,7 @@ gaze_copy = pd.merge(
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 
 # Time spent on each feature
-gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
+gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
 gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
@@ -83,6 +84,38 @@ gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseco
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
 gaze_copy.drop("duration(micro)", axis=1)
 
+# Saccade calculations
+gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
+gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
+gaze_copy["saccade distance"] = np.sqrt(
+    (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
+)
+
+conditions = [
+    gaze_copy["change x"] > 0 & gaze_copy["change y"] == 0,
+    gaze_copy["change x"] < 0 & gaze_copy["change y"] == 0,
+    gaze_copy["change x"] == 0 & gaze_copy["change y"] > 0,
+    gaze_copy["change x"] == 0 & gaze_copy["change y"] < 0,
+    gaze_copy["change x"] > 0 & gaze_copy["change y"] > 0,
+    gaze_copy["change x"] > 0 & gaze_copy["change y"] < 0,
+    gaze_copy["change x"] < 0 & gaze_copy["change y"] > 0,
+    gaze_copy["change x"] < 0 & gaze_copy["change y"] < 0,
+]
+
+choices = [
+    "east",
+    "west",
+    "north",
+    "south",
+    "northeast",
+    "southeast",
+    "northwest",
+    "southwest",
+]
+
+gaze_copy["saccade direction"] = np.select(conditions, choices, "none")
+
+
 # Direction of saccades
 gaze_copy["direction x"] = gaze_copy["change x"].apply(
     lambda x: "east" if x > 0 else "west"
@@ -90,7 +123,7 @@ gaze_copy["direction x"] = gaze_copy["change x"].apply(
 gaze_copy["direction y"] = gaze_copy["change y"].apply(
     lambda y: "north" if y > 0 else "south"
 )
-gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
+gaze_copy["direction y"] + gaze_copy["direction x"]
 gaze_copy.drop(["direction x", "direction y"], axis=1)
 
 
@@ -220,11 +253,7 @@ mean_streak = streak_tag.groupby("tag").mean()
 
 # Amplitude of saccades by feature
 gaze_copy["saccade time(s)"] = gaze_copy["duration(s)"]
-gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
-gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
-gaze_copy["saccade distance"] = np.sqrt(
-    (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
-)
+
 
 # Total % time spent on each feature plotted (all)
 gaze_plot = (
