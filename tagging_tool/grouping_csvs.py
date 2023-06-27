@@ -134,5 +134,4 @@ except AssertionError:
         f.write(f"Participant count does not match number of folders")
 
 target_csv.to_csv("data/all_gaze.csv", index=False, compression="gzip")
-# target_csv.to_csv("all_gaze.csv", index=False, compression="gzip")
 print("all_gaze.csv created")
