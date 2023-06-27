@@ -75,16 +75,32 @@ gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 # Excludes them from analysis
 fixation_count = gaze_copy.groupby("participant_folder").sum()
 no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
-no_fixations_participants = no_fixations.loc[:, "participant_folder"]
+null_participants = no_fixations.loc[:, "participant_folder"].to_list()
+gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 
 
-# Fixation/saccade dataframes
-gaze_copy = gaze_copy.assign(row_number=range(len(gaze_copy)))
-gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+# Time spent on each feature
+gaze_fixed = gaze_fixed.groupby("participant_folder").apply(modify)
+gaze_fixed["seconds_id"] = gaze_fixed["increment_marker"].apply(lambda x: x.seconds)
+gaze_fixed["ts"] = gaze_fixed["timestamp [ns]_for_grouping"].apply(
+    lambda x: dt.datetime.fromtimestamp(x / 1000000000)
+)
+
+# Durations
+# Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
+gaze_fixed["duration"] = gaze_fixed["next time"] - gaze_fixed["ts"]
+gaze_fixed["duration(micro)"] = gaze_fixed["duration"].apply(lambda x: x.microseconds)
+gaze_fixed["duration(s)"] = gaze_fixed["duration(micro)"] / 1000000
+gaze_fixed = gaze_fixed.drop("duration(micro)", axis=1)
+
+# Fixation dataframe
+gaze_fixed = gaze_fixed.assign(row_number=range(len(gaze_fixed)))
+gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
 gaze_fixation["fixation id"].value_counts(dropna=False)
 
-fixation_null = gaze_copy[gaze_copy["fixation id"].isnull()]
-id = gaze_copy.groupby("fixation id")
+# Saccade dataframe
+fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
+id = gaze_fixed.groupby("fixation id")
 fixation = (
     pd.concat([id.head(1), id.tail(1)])
     .drop_duplicates()
@@ -95,20 +111,15 @@ gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 gaze_saccades = gaze_saccades.drop("row_number", axis=1)
 
+m = gaze_saccades["fixation id"].isna()
+s = m.cumsum()
+N = 2
+gaze_saccades["new"] = s.map(s[~m].value_counts()).ge(N) & ~m
 
-# Time spent on each feature
-gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
-    lambda x: dt.datetime.fromtimestamp(x / 1000000000)
-)
+empty = pd.Series()
 
-# Durations
-# Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
-gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
-gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
-gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
-gaze_copy.drop("duration(micro)", axis=1)
+
+gaze_saccades["fixation id"] = gaze_saccades["fixation id"].fillna("saccade")
 
 
 # Saccade distance & direction
@@ -142,6 +153,9 @@ choices = [
 
 gaze_copy["saccade direction"] = np.select(conditions, choices, "none")
 
+# Cleaning gaze_fixed dataframe
+gaze_fixed["fixation id"] = gaze_fixed["fixation id"].fillna("saccade")
+gaze_fixed = gaze_fixed.drop("row_number", axis=1)
 
 """
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
