@@ -50,83 +50,31 @@ mapping = {
 
 all_gaze["tag"] = all_gaze["tag"].map(mapping)
 
-modes = all_gaze["tag"].value_counts()
-
 all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
 
-
-def participant_folder_corrector(input_string):
-    """Add a 0 after the underscore in participant_folder"""
-    import re
-
-    try:
-        target_for_replacement = re.findall(pattern="\d+(_\d+).*", string=input_string)[
-            0
-        ]
-
-    except:
-        return input_string
-
-    if len(target_for_replacement) >= 3:
-        return input_string
-
-    else:
-        return input_string.replace("_", "_0")
-
-
-def participant_corrector(input_string):
-    """Fixing the 1 digit issue after the underscore"""
-    items = input_string.split("_")  # attach  maxsplit later
-    section_of_interest = items[-1]
-    count = 0
-    for char in section_of_interest:
-        if char.isdigit():
-            count += 1
-
-        else:
-            pass
-
-    if count >= 2:
-        return input_string
-
-    else:
-        return input_string.replace("_", "_0")
-
-
 demographic = pd.read_excel("../data/demographic.xlsx")
-demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].fillna("none")
-demographic = demographic[demographic["codice_eyetr_museo"] != "none"]
-demographic["codice_eyetr_museo"] = demographic["codice_eyetr_museo"].apply(
-    lambda x: participant_corrector(x)
-)
-all_gaze["codice_eyetr_museo"] = all_gaze["participant_folder"].apply(
-    lambda x: participant_corrector(x)
-)
+demographic = demographic[
+    [
+        "School or degree course",
+        "Age",
+        "Educational Qualification",
+        "sesso",
+        "codice_eyetr_museo",
+    ]
+]
 
 gaze_copy = pd.merge(
-    all_gaze,
-    demographic[
-        [
-            "School or degree course",
-            "Age",
-            "Educational Qualification",
-            "sesso",
-            "codice_eyetr_museo",
-        ]
-    ],
-    left_on="participant_folder",
-    right_on="codice_eyetr_museo",
-    how="left",
+    all_gaze, demographic, left_on="participant_folder", right_on="codice_eyetr_museo"
 )
 
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 
 # Time spent on each feature
+gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
+gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
-gaze_copy = gaze_copy.groupby(["participant_folder"]).apply(modify)
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
 # Durations
 # Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
@@ -134,12 +82,6 @@ gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
 gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
 gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
 gaze_copy.drop("duration(micro)", axis=1)
-
-# Fixation/saccade analysis
-gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
-gaze_fixation["fixation id"].value_counts(dropna=False)
-gaze_saccade = gaze_copy[gaze_copy["fixation id"].isnull()].copy()
-
 
 # Direction of saccades
 gaze_copy["direction x"] = gaze_copy["change x"].apply(
@@ -150,6 +92,12 @@ gaze_copy["direction y"] = gaze_copy["change y"].apply(
 )
 gaze_copy["saccade direction"] = gaze_copy["direction y"] + gaze_copy["direction x"]
 gaze_copy.drop(["direction x", "direction y"], axis=1)
+
+
+# Fixation/saccade analysis
+gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+gaze_fixation["fixation id"].value_counts(dropna=False)
+gaze_saccade = gaze_copy[gaze_copy["fixation id"].isnull()].copy()
 
 
 """
