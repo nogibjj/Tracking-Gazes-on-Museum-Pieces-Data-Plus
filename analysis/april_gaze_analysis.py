@@ -110,11 +110,16 @@ fixation = (
 gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 gaze_saccades = gaze_saccades.drop("row_number", axis=1)
+gaze_saccades = gaze_saccades.assign(row_number=range(len(gaze_saccades)))
 
 m = gaze_saccades["fixation id"].isna()
 s = m.cumsum()
 N = 2
 gaze_saccades["new"] = s.map(s[~m].value_counts()).ge(N) & ~m
+
+needs_saccades = gaze_saccades[gaze_saccades["new"] == True]
+rows = needs_saccades["row_number"]
+idx = ((rows + rows.shift(-1)) / 2)[::2]
 
 empty = pd.Series()
 
