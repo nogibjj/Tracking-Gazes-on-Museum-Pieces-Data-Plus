@@ -174,6 +174,10 @@ for folder in participant_paths_folders:
     coordinates_df.to_csv(
         os.path.join(folder, f"tags_coordinates_{current_time}.csv"), index=False
     )
+    coordinates_df.to_csv(
+        os.path.join(env_var.TEMP_OUTPUT_DIR, f"tags_coordinates_{current_time}.csv"),
+        index=False,
+    )
     # market basket analysis
     # https://pbpython.com/market-basket-analysis.html
 

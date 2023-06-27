@@ -4,22 +4,24 @@ import pandas as pd
 import os
 import datetime as dt
 import glob
-from repository_finder import repository_details
+import sys
 
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, path)
 
-def timestamp_corrector(gaze_csv_path, col_name="timestamp [ns]_for_grouping"):
-    """Process the unix timestamps
-    and create seconds columns to facilitate
-    generation of descriptive statistics"""
+from config import *
+from heatmap.functions import create_directory
 
-    gaze_copy = pd.read_csv(gaze_csv_path)
-    gaze_copy["ts"] = gaze_copy[col_name].apply(
-        lambda x: dt.datetime.fromtimestamp(x / 1000000000)
-    )
-    baseline = gaze_copy["ts"][0]
-    gaze_copy["increment_marker"] = gaze_copy["ts"] - baseline
-    gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-    return gaze_copy
+# print(" Made it past imports")
+# Set env variables based on config file
+try:
+    env = sys.argv[1]
+    env_var = eval(env + "_config")
+except:
+    print("Enter valid env variable. Refer to classes in the config.py file")
+    sys.exit()
+
+create_directory(env_var.TEMP_OUTPUT_DIR)
 
 
 # A strong assumption is that
@@ -32,20 +34,9 @@ def timestamp_corrector(gaze_csv_path, col_name="timestamp [ns]_for_grouping"):
 participant_repository = None
 name_of_art_piece = None
 
-with open("Paths.txt", "r") as f:
-    for line in f.readlines():
-        if "AFTER THE COLON" in line and "PARTICIPANT" in line:
-            participant_repository = line.split(":", maxsplit=1)[1].strip()
 
-            print(f"participant_repository is {participant_repository}")
-
-        elif "AFTER THE COLON" in line and "ART PIECE" in line:
-            name_of_art_piece = line.split(":", maxsplit=1)[1].strip()
-
-            break
-
-
-ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
+ROOT_PATH = env_var.ROOT_PATH
+ART_PIECE = env_var.ART_PIECE  # a list
 
 
 participant_paths_folders = []
@@ -78,7 +69,7 @@ participant_list = []
 # fixing news issue - Warning - Temporary fix
 for folder in participant_paths_folders:
     files = os.listdir(folder)
-    participant_id = folder.split("\\")[-1]
+    participant_id = folder.split(os.sep)[-1]
     if "new" in participant_id:
         print(f"Fixing participant id -- {participant_id}")
         temp = participant_id.replace("new", "")
@@ -113,9 +104,14 @@ for folder in participant_paths_folders:
         # print(gaze_csv_path)
         # For now, we will keep the timestamp_corrector step
         # It might be redundant, but it is a good sanity check
-        gaze_csv = timestamp_corrector(gaze_csv_path)
-        gaze_csv["participant_folder"] = folder.split("\\")[-1]
-        gaze_csv["art_piece"] = name_of_art_piece
+        gaze_csv = pd.read_csv(gaze_csv_path)
+        gaze_csv["participant_folder"] = folder.split(os.sep)[-1]
+        if len(ART_PIECE) > 1:
+            gaze_csv["art_piece"] = ART_PIECE[0]  # change this line
+
+        else:  # It is one piece only
+            gaze_csv["art_piece"] = ART_PIECE[0]
+
         gaze_csv["participant_id"] = participant_count
         ideal_rows += gaze_csv.shape[0]
         target_csv = pd.concat([target_csv, gaze_csv], axis=0)
@@ -137,5 +133,6 @@ except AssertionError:
         f.write(f"Number of folders found: {num_folders}")
         f.write(f"Participant count does not match number of folders")
 
-target_csv.to_csv("all_gaze.csv", index=False, compression="gzip")
+target_csv.to_csv("data/all_gaze.csv", index=False, compression="gzip")
+# target_csv.to_csv("all_gaze.csv", index=False, compression="gzip")
 print("all_gaze.csv created")

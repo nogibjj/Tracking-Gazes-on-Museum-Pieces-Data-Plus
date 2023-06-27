@@ -12,6 +12,24 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
 import re
+import sys
+
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, path)
+
+from config import *
+from heatmap.functions import create_directory
+
+# print(" Made it past imports")
+# Set env variables based on config file
+try:
+    env = sys.argv[1]
+    env_var = eval(env + "_config")
+except:
+    print("Enter valid env variable. Refer to classes in the config.py file")
+    sys.exit()
+
+create_directory(env_var.TEMP_OUTPUT_DIR)
 
 
 def ref_coordinate_processing(gaze_reference_df):
@@ -167,10 +185,8 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
     return name
 
 
-ROOT_PATH, ART_PIECE = repository_details("Paths.txt")
-# ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
+ROOT_PATH = env_var.ROOT_PATH
 
-# MEMBER_FLAG = "ERIC"
 participant_paths_folders = []
 
 for folder in os.listdir(ROOT_PATH):
@@ -199,7 +215,7 @@ participant_list = []
 # fixing news issue - Warning - Temporary fix
 for folder in participant_paths_folders:
     files = os.listdir(folder)
-    participant_id = folder.split("\\")[-1]
+    participant_id = folder.split(os.sep)[-1]
     if "new" in participant_id:
         print(f"Fixing participant id -- {participant_id}")
         temp = participant_id.replace("new", "")
@@ -217,17 +233,10 @@ for folder in participant_paths_folders:
     else:
         participant_list.append(participant_id)
 
-# bulk_count = len(participant_list) // 2 + ((len(participant_list) // 2) // 2)
-
-# if MEMBER_FLAG == "APRIL":
-#     participant_list = participant_list[0:bulk_count]
-
-# elif MEMBER_FLAG == "ERIC":
-#     participant_list = participant_list[bulk_count:]
 
 for folder in participant_paths_folders:
     files = os.listdir(folder)
-    participant_id = folder.split("\\")[-1]  # fix for future reference
+    participant_id = folder.split(os.sep)[-1]  # fix for future reference
     # print(files)
     if participant_id not in participant_list:
         print(f"Skipping folder -- {folder}")
@@ -272,7 +281,13 @@ for folder in participant_paths_folders:
     participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
         "ref_coordinates"
     ].apply(lambda x: gaze_tagger(x, user_tag_coordinates))
-
+    current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    participant_reference_gaze_csv.to_csv(
+        os.path.join(
+            env_var.TEMP_OUTPUT_DIR,
+            f"final_gaze_tagged_{participant_id}_{current_time}.csv",
+        )
+    )
     participant_reference_gaze_csv.to_csv(os.path.join(folder, "final_gaze_tagged.csv"))
 
     print("Done for folder -- ", folder)
