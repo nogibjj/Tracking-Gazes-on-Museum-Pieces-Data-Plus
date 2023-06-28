@@ -75,16 +75,31 @@ gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 # Excludes them from analysis
 fixation_count = gaze_copy.groupby("participant_folder").sum()
 no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
-no_fixations_participants = no_fixations.loc[:, "participant_folder"]
+null_participants = no_fixations.loc[:, "participant_folder"].to_list()
+gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 
 
-# Fixation/saccade dataframes
-gaze_copy = gaze_copy.assign(row_number=range(len(gaze_copy)))
-gaze_fixation = gaze_copy[~gaze_copy["fixation id"].isnull()].copy()
+# Time spent on each feature
+gaze_fixed = gaze_fixed.groupby("participant_folder").apply(modify)
+gaze_fixed["seconds_id"] = gaze_fixed["increment_marker"].apply(lambda x: x.seconds)
+gaze_fixed["ts"] = gaze_fixed["timestamp [ns]_for_grouping"].apply(
+    lambda x: dt.datetime.fromtimestamp(x / 1000000000)
+)
+
+# Durations
+gaze_fixed["duration"] = gaze_fixed["next time"] - gaze_fixed["ts"]
+gaze_fixed["duration(micro)"] = gaze_fixed["duration"].apply(lambda x: x.microseconds)
+gaze_fixed["gaze duration(s)"] = gaze_fixed["duration(micro)"] / 1000000
+gaze_fixed = gaze_fixed.drop("duration(micro)", axis=1)
+
+# Fixation dataframe
+gaze_fixed = gaze_fixed.assign(row_number=range(len(gaze_fixed)))
+gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
 gaze_fixation["fixation id"].value_counts(dropna=False)
 
-fixation_null = gaze_copy[gaze_copy["fixation id"].isnull()]
-id = gaze_copy.groupby("fixation id")
+# Saccade dataframe
+fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
+id = gaze_fixed.groupby("fixation id")
 fixation = (
     pd.concat([id.head(1), id.tail(1)])
     .drop_duplicates()
@@ -95,38 +110,32 @@ gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 gaze_saccades = gaze_saccades.drop("row_number", axis=1)
 
+# Saccade calculations
+saccade_calc = gaze_saccades[gaze_saccades["fixation id"].notnull()]
+saccade_calc = saccade_calc.groupby("participant_folder").apply(modify)
 
-# Time spent on each feature
-gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
-    lambda x: dt.datetime.fromtimestamp(x / 1000000000)
+saccade_calc["s duration"] = saccade_calc["next time"] - saccade_calc["ts"]
+saccade_calc["s duration(micro)"] = saccade_calc["s duration"].apply(
+    lambda x: x.microseconds
 )
+saccade_calc["saccade duration(s)"] = saccade_calc["s duration(micro)"] / 1000000
+saccade_calc = saccade_calc.drop("s duration(micro)", axis=1)
 
-# Durations
-# Drop last row to get rid of null value since one fixation is short enough that it shouldn't have a major impact on analysis
-gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
-gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
-gaze_copy["duration(s)"] = gaze_copy["duration(micro)"] / 1000000
-gaze_copy.drop("duration(micro)", axis=1)
-
-
-# Saccade distance & direction
-gaze_copy["change x"] = gaze_copy["next x"] - gaze_copy["gaze x [px]"]
-gaze_copy["change y"] = gaze_copy["next y"] - gaze_copy["gaze y [px]"]
-gaze_copy["saccade distance"] = np.sqrt(
-    (gaze_copy["change x"] ** 2) + (gaze_copy["change y"] ** 2)
+saccade_calc["change x"] = saccade_calc["next x"] - saccade_calc["gaze x [px]"]
+saccade_calc["change y"] = saccade_calc["next y"] - saccade_calc["gaze y [px]"]
+saccade_calc["saccade distance"] = np.sqrt(
+    (saccade_calc["change x"] ** 2) + (saccade_calc["change y"] ** 2)
 )
 
 conditions = [
-    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] == 0),
-    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] == 0),
-    (gaze_copy["change x"] == 0) & (gaze_copy["change y"] > 0),
-    (gaze_copy["change x"] == 0) & gaze_copy["change y"] < 0,
-    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] > 0),
-    (gaze_copy["change x"] > 0) & (gaze_copy["change y"] < 0),
-    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] > 0),
-    (gaze_copy["change x"] < 0) & (gaze_copy["change y"] < 0),
+    (saccade_calc["change x"] > 0) & (saccade_calc["change y"] == 0),
+    (saccade_calc["change x"] < 0) & (saccade_calc["change y"] == 0),
+    (saccade_calc["change x"] == 0) & (saccade_calc["change y"] > 0),
+    (saccade_calc["change x"] == 0) & saccade_calc["change y"] < 0,
+    (saccade_calc["change x"] > 0) & (saccade_calc["change y"] > 0),
+    (saccade_calc["change x"] > 0) & (saccade_calc["change y"] < 0),
+    (saccade_calc["change x"] < 0) & (saccade_calc["change y"] > 0),
+    (saccade_calc["change x"] < 0) & (saccade_calc["change y"] < 0),
 ]
 
 choices = [
@@ -140,8 +149,58 @@ choices = [
     "southwest",
 ]
 
-gaze_copy["saccade direction"] = np.select(conditions, choices, "none")
+saccade_calc["saccade direction"] = np.select(conditions, choices, "none")
+saccade_calc = saccade_calc.reset_index(drop=True)
+saccade_calc = saccade_calc[
+    [
+        "index",
+        "saccade duration(s)",
+        "change x",
+        "change y",
+        "saccade distance",
+        "saccade direction",
+    ]
+]
 
+gaze_saccades = pd.merge(
+    gaze_saccades, saccade_calc, left_on="index", right_on="index", how="left"
+)
+
+# Insert empty row if saccade isn't recorded
+m = gaze_saccades["fixation id"].isna()
+s = m.cumsum()
+N = 2
+gaze_saccades["new"] = s.map(s[~m].value_counts()).ge(N) & ~m
+gaze_saccades["new1"] = gaze_saccades["new"].shift(-1)
+
+mask = (gaze_saccades["new"] == True) & (gaze_saccades["new1"] == True)
+saccade_change = gaze_saccades[mask]
+saccade_change = saccade_change.set_index(saccade_change.index + 0.5)
+saccade_change.loc[:] = np.nan
+gaze_saccades = pd.concat([gaze_saccades, saccade_change], sort=False).drop(
+    ["new", "new1"], axis=1
+)
+gaze_saccades.sort_index(inplace=True)
+gaze_saccades = gaze_saccades.reset_index().drop("level_0", axis=1)
+gaze_saccades["participant_folder"] = gaze_saccades["participant_folder"].fillna(
+    method="ffill"
+)
+
+# Organizing saccade calcuations
+gaze_saccades["saccade direction"] = gaze_saccades["saccade direction"].fillna(
+    method="ffill"
+)
+gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade direction"] = np.nan
+gaze_saccades["saccade duration(s)"] = gaze_saccades["saccade duration(s)"].fillna(
+    method="ffill"
+)
+gaze_saccades.loc[
+    gaze_saccades["fixation id"].notnull(), "saccade duration(s)"
+] = np.nan
+
+
+# Dataframe for testing, delete later
+saccade_test = gaze_saccades
 
 """
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
