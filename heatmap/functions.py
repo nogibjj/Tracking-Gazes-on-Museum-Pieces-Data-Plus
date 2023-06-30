@@ -1,5 +1,5 @@
 """
-Author: Aditya John (aj391)
+Author: Aditya John (aj391), Eric Rios Soderman (ejr41)
 This script contains helper functions used by the draw_heatmap.py script
 """
 import sys
@@ -10,7 +10,9 @@ import pandas as pd
 import numpy as np
 
 
-def get_closest_individual_gaze_object(cap, curr_frame, gaze_df, bounding_size, timestamp_col='heatmap_ts'):
+def get_closest_individual_gaze_object(
+    cap, curr_frame, gaze_df, bounding_size, timestamp_col="heatmap_ts"
+):
     """
     Function to look at the current timestamp and return the pixel locations
     in the gaze csv that is closest to it.
@@ -179,6 +181,75 @@ def save_outputs(
     cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
     cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
     updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+
+
+def reference_image_finder(video_path: str, return_mse_list=False):
+    """Finds the best possible reference image in a video.
+
+    It looks for the frame with the lowest
+    mean squared error (MSE) when compared to all of its other frames."""
+
+    # mse function for the image calculations
+    def mse(img1, img2):
+        h, w = img1.shape
+        diff = cv2.subtract(img1, img2)
+        err = np.sum(diff**2)
+        mse = err / (float(h * w))
+        return mse
+
+    cap = cv2.VideoCapture(video_path)
+    frame_dictionary_gray = dict()
+    frame_dictionary_original = dict()
+    frame_number = 0
+    while cap.isOpened():
+        success, frame = cap.read()
+
+        if success:
+            frame_number += 1
+            frame_dictionary_original[frame_number] = frame.copy()
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frame_dictionary_gray[frame_number] = gray_frame.copy()
+
+        else:
+            print("Done storing the video frames for MSE")
+            print(
+                f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+            )
+            break
+
+    cv2.destroyAllWindows()
+    cap.release()
+    frame_mse = dict()
+    frame_mse_with_list = dict()
+
+    for main_key in frame_dictionary_gray:
+        copy_dn = frame_dictionary_gray.copy()
+        copy_dn.pop(main_key)
+        mse_list = list()
+
+        for other_key in copy_dn:
+            mse_list.extend([mse(frame_dictionary_gray[main_key], copy_dn[other_key])])
+
+        # Mean is the best option.
+        # Mode won't work because the participant is never still.
+        # Median is not necessary because it is a metric meant to
+        # protect against outliers.
+        # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+        # those 20 bad ones will be outliers in all the MSEs of the
+        # good frames, but they will simultaneously have the worst MSE.
+        frame_mse[main_key] = np.mean(mse_list.copy())
+        frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+
+    best_frame_num = min(frame_mse, key=frame_mse.get)
+    best_frame = frame_dictionary_original[best_frame_num]
+
+    print(f"Obtained best frame for video : {best_frame_num}")
+
+    if return_mse_list:
+        return best_frame, frame_mse_with_list
+
+    else:
+        return best_frame
 
 
 """
