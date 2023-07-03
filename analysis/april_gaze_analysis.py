@@ -91,11 +91,8 @@ gaze_fixed["duration"] = gaze_fixed["next time"] - gaze_fixed["ts"]
 gaze_fixed["duration(micro)"] = gaze_fixed["duration"].apply(lambda x: x.microseconds)
 gaze_fixed["gaze duration(s)"] = gaze_fixed["duration(micro)"] / 1000000
 gaze_fixed = gaze_fixed.drop("duration(micro)", axis=1)
-
-# Fixation dataframe
 gaze_fixed = gaze_fixed.assign(row_number=range(len(gaze_fixed)))
-gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
-gaze_fixation["fixation id"].value_counts(dropna=False)
+
 
 # Saccade dataframe
 fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
@@ -197,10 +194,37 @@ gaze_saccades["saccade duration(s)"] = gaze_saccades["saccade duration(s)"].fill
 gaze_saccades.loc[
     gaze_saccades["fixation id"].notnull(), "saccade duration(s)"
 ] = np.nan
+gaze_saccades = gaze_saccades.drop(["duration", "gaze duration(s)"], axis=1)
 
 
 # Dataframe for testing, delete later
 saccade_test = gaze_saccades
+
+
+# Fixation dataframe
+gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
+gaze_fixation["fixation id"].value_counts(dropna=False)
+gaze_fixation = gaze_fixation.drop("row_number", axis=1).reset_index(drop=True)
+
+# Fixation calculations
+fixations = gaze_fixation[["participant_folder", "fixation id", "gaze duration(s)"]]
+fix_durations = fixations.groupby(["participant_folder", "fixation id"])[
+    "gaze duration(s)"
+].sum()
+fix_durations = fix_durations.to_frame()
+fix_durations = fix_durations.rename(
+    {"gaze duration(s)": "fixation duration(s)"}, axis=1
+)
+
+fix_mean = fix_durations.groupby("participant_folder")["fixation duration(s)"].mean()
+fix_mean = fix_mean.to_frame()
+fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
+
+overall_mean = fix_mean["mean fix duration(s)"].mean()
+
+# Test dataframe
+test_fix = gaze_fixation
+
 
 """
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
