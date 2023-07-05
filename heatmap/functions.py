@@ -252,7 +252,7 @@ def best_frame_finder(
             # good frames, but the bads will simultaneously have the worst MSE.
         frame_mse[main_key] = np.mean(mse_list.copy())
         frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
-        print(f"Obtained MSE for video frame: {main_key}")
+        # print(f"Obtained MSE for video frame: {main_key}")
     best_frame_num = min(frame_mse, key=frame_mse.get)
     best_frame = frame_dictionary[best_frame_num]
 
