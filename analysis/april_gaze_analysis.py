@@ -222,11 +222,95 @@ fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axi
 
 overall_mean = fix_mean["mean fix duration(s)"].mean()
 
+# Fixation means with demographic data
+fix_mean_dem = pd.merge(
+    fix_mean,
+    demographic[
+        [
+            "School or degree course",
+            "Age",
+            "Educational Qualification",
+            "sesso",
+            "codice_eyetr_museo",
+        ]
+    ],
+    left_on="participant_folder",
+    right_on="codice_eyetr_museo",
+    how="left",
+)
+fix_mean_dem.sort_values("Age", inplace=True)
+fix_mean_dem.reset_index(drop=True, inplace=True)
+fix_mean_dem["age group"] = pd.cut(
+    fix_mean_dem["Age"], bins=6, right=True, precision=0, include_lowest=True
+)
+fix_mean_age = fix_mean_dem.groupby("age group")["mean fix duration(s)"].mean()
+fix_mean_edu = fix_mean_dem.groupby("Educational Qualification")[
+    "mean fix duration(s)"
+].mean()
+fix_mean_gender = fix_mean_dem.groupby("sesso")["mean fix duration(s)"].mean()
+
 # Test dataframe
 test_fix = gaze_fixation
 
 
+# Fixations per second for each participant
+fix_per_time = gaze_fixed[
+    ["participant_folder", "fixation id", "duration"]
+].reset_index(drop=True)
+fix_per_time["time elapsed(s)"] = fix_per_time.groupby("participant_folder")[
+    "duration"
+].cumsum()
+
+fix_per_sec = (
+    fix_per_time.groupby(
+        ["participant_folder", pd.Grouper(key="time elapsed(s)", freq="1S")]
+    )["fixation id"]
+    .nunique()
+    .to_frame()
+)
+fix_per_sec = fix_per_sec.rename({"fixation id": "fixation freq"}, axis=1).reset_index()
+fix_per_sec_mean = (
+    fix_per_sec.groupby("participant_folder")["fixation freq"].mean().to_frame()
+)
+
+# Fixation frequency per second with demographic data
+fix_per_sec_dem = pd.merge(
+    fix_per_sec_mean,
+    demographic[
+        [
+            "School or degree course",
+            "Age",
+            "Educational Qualification",
+            "sesso",
+            "codice_eyetr_museo",
+        ]
+    ],
+    left_on="participant_folder",
+    right_on="codice_eyetr_museo",
+    how="left",
+).drop("codice_eyetr_museo", axis=1)
+fix_per_sec_dem.sort_values("Age", inplace=True)
+fix_per_sec_dem.reset_index(drop=True, inplace=True)
+fix_per_sec_dem["age group"] = pd.cut(
+    fix_per_sec_dem["Age"], bins=6, right=True, precision=0, include_lowest=True
+)
+fix_per_sec_age = fix_per_sec_dem.groupby("age group")["fixation freq"].mean()
+fix_per_sec_edu = fix_per_sec_dem.groupby("Educational Qualification")[
+    "fixation freq"
+].mean()
+fix_per_sec_gender = fix_per_sec_dem.groupby("sesso")["fixation freq"].mean()
+
+
 """
+total_dur = total_dur.rename({"gaze duration(s)": "total duration(s)"}, axis=1)
+fix_per_time = pd.merge(
+    fix_per_time,
+    total_dur,
+    left_on="participant_folder",
+    right_on="participant_folder",
+    how="left",
+)
+
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 fixation_time = gaze_copy.groupby("tag")["fixation id"].sum()
 total_time = gaze_copy["duration(s)"].sum()
