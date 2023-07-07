@@ -257,46 +257,8 @@ fix_per_sec_mean.reset_index(inplace=True)
 # Add fixations per second to analysis dataframe
 fix_analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
 
-# Add demographic data to analysis dataframe
-fix_analysis = pd.merge(
-    fix_analysis,
-    demographic[
-        [
-            "School or degree course",
-            "Age",
-            "Educational Qualification",
-            "sesso",
-            "codice_eyetr_museo",
-        ]
-    ],
-    left_on="participant_folder",
-    right_on="codice_eyetr_museo",
-    how="left",
-)
-fix_analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
-fix_analysis.sort_values("Age", inplace=True)
-fix_analysis["age group"] = pd.cut(
-    fix_analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
-)
 
-
-# Fixation means with demographic data
-fix_mean_age = fix_analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_mean_edu = fix_analysis.groupby("Educational Qualification")[
-    "mean fix duration(s)"
-].mean()
-fix_mean_gender = fix_analysis.groupby("sesso")["mean fix duration(s)"].mean()
-
-
-# Fixation frequency per second with demographic data
-fix_per_sec_age = fix_analysis.groupby("age group")["fixation freq"].mean()
-fix_per_sec_edu = fix_analysis.groupby("Educational Qualification")[
-    "fixation freq"
-].mean()
-fix_per_sec_gender = fix_analysis.groupby("sesso")["fixation freq"].mean()
-
-
-# Trying to figure out the participants who don't have a fixation id
+# Figuring out the participants who don't have a fixation id
 gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
 gaze_null.drop("row_number", axis=1, inplace=True)
 
@@ -326,6 +288,62 @@ gen_tag_fix = (
 )
 gen_tag_fix.reset_index(inplace=True)
 gen_tag_fix_avg = gen_tag_fix.groupby("general tag")["gaze duration(s)"].mean()
+
+
+# First and last things participants fixated on and for how long
+g = gaze_fixation.groupby("participant_folder")
+
+first_last = pd.concat([g.head(1), g.tail(1)]).sort_values("participant_folder")
+first_last = first_last[
+    ["participant_folder", "general tag", "tag", "fixation duration(s)"]
+]
+
+# First time participants fixated on each feature
+gaze_fixation["time elapsed"] = gaze_fixation.groupby("participant_folder")[
+    "duration"
+].cumsum()
+
+first_gen = gaze_fixation[gaze_fixation["index"].isin(out_gen)]
+first_gen = first_gen[["participant_folder", "general tag", "time elapsed"]]
+
+
+# Demographics
+"""# Add demographic data to analysis dataframe
+fix_analysis = pd.merge(
+    fix_analysis,
+    demographic[
+        [
+            "School or degree course",
+            "Age",
+            "Educational Qualification",
+            "sesso",
+            "codice_eyetr_museo",
+        ]
+    ],
+    left_on="participant_folder",
+    right_on="codice_eyetr_museo",
+    how="left",
+)
+fix_analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
+fix_analysis.sort_values("Age", inplace=True)
+fix_analysis["age group"] = pd.cut(
+    fix_analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
+)
+# Fixation means with demographic data
+fix_mean_age = fix_analysis.groupby("age group")["mean fix duration(s)"].mean()
+fix_mean_edu = fix_analysis.groupby("Educational Qualification")[
+    "mean fix duration(s)"
+].mean()
+fix_mean_gender = fix_analysis.groupby("sesso")["mean fix duration(s)"].mean()
+
+
+# Fixation frequency per second with demographic data
+fix_per_sec_age = fix_analysis.groupby("age group")["fixation freq"].mean()
+fix_per_sec_edu = fix_analysis.groupby("Educational Qualification")[
+    "fixation freq"
+].mean()
+fix_per_sec_gender = fix_analysis.groupby("sesso")["fixation freq"].mean()
+"""
 
 
 """
