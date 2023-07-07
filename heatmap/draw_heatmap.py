@@ -1,5 +1,5 @@
 """
-Author: Aditya John (aj391)
+Author: Aditya John (aj391), Eric Rios Soderman (ejr41) (Reference Image Implementation)
 This is a script that ingests a csv of gazes (when looking at an object) and outputs a final image 
 with a heatmap across the various pixels of interest. 
 Spdates the gaze.csv file with new 'gaze' pixel locations that correspond to the reference image 
@@ -14,7 +14,8 @@ Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-b
 """
 import sys
 import os
-path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # prepend parent directory to the system path:
 sys.path.insert(0, path)
 
@@ -31,6 +32,7 @@ from functions import (
     create_directory,
     resample_gaze,
     save_outputs,
+    reference_image_finder,
 )
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
 from config import *
@@ -65,6 +67,15 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         gaze_df = resample_gaze(gaze_df)
 
     updated_gaze = pd.DataFrame()
+    print(
+        f"""Starting to look for reference image for the video {video_file},
+          from the folder {folder}"""
+    )
+    first_frame = reference_image_finder(video_file)
+    print(
+        f"""Found the reference image for the video {video_file}
+          from the folder {folder}"""
+    )
     cap = cv2.VideoCapture(video_file)
 
     while cap.isOpened():
@@ -74,17 +85,17 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         frame_no += 1
         frame_exists, curr_frame = cap.read()
 
-        if frame_no < env_var.SKIP_FIRST_N_FRAMES:
-            continue
+        # if frame_no < env_var.SKIP_FIRST_N_FRAMES:
+        #     continue
 
         ##### Uncomment below if early stopping is required
         # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:
         #    break
 
-        elif frame_no == env_var.SKIP_FIRST_N_FRAMES and frame_exists:
-            first_frame = curr_frame
+        # elif frame_no == env_var.SKIP_FIRST_N_FRAMES and frame_exists:
+        #     first_frame = curr_frame
 
-        elif frame_exists:
+        if frame_exists:
             gaze_object_crop, closest_row = get_closest_individual_gaze_object(
                 cap, curr_frame, gaze_df, env_var.DETECT_BOUNDING_SIZE
             )

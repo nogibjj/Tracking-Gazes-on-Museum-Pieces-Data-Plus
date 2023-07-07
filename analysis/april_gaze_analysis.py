@@ -4,6 +4,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 
 # Groupby function
@@ -70,28 +71,27 @@ gaze_copy = pd.merge(
 
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
 
-
-# Pulls out participants who do not have fixation ids
-# Excludes them from analysis
-fixation_count = gaze_copy.groupby("participant_folder").sum()
-no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
-null_participants = no_fixations.loc[:, "participant_folder"].to_list()
-gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
-
-
-# Time spent on each feature
-gaze_fixed = gaze_fixed.groupby("participant_folder").apply(modify)
-gaze_fixed["seconds_id"] = gaze_fixed["increment_marker"].apply(lambda x: x.seconds)
-gaze_fixed["ts"] = gaze_fixed["timestamp [ns]_for_grouping"].apply(
+# Timestamps
+gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
+gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
+gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
 
 # Durations
-gaze_fixed["duration"] = gaze_fixed["next time"] - gaze_fixed["ts"]
-gaze_fixed["duration(micro)"] = gaze_fixed["duration"].apply(lambda x: x.microseconds)
-gaze_fixed["gaze duration(s)"] = gaze_fixed["duration(micro)"] / 1000000
-gaze_fixed = gaze_fixed.drop("duration(micro)", axis=1)
-gaze_fixed = gaze_fixed.assign(row_number=range(len(gaze_fixed)))
+gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
+gaze_copy["duration(micro)"] = gaze_copy["duration"].apply(lambda x: x.microseconds)
+gaze_copy["gaze duration(s)"] = gaze_copy["duration(micro)"] / 1000000
+gaze_copy = gaze_copy.drop("duration(micro)", axis=1)
+gaze_copy = gaze_copy.assign(row_number=range(len(gaze_copy)))
+gaze_copy.reset_index(drop=True, inplace=True)
+
+
+# Pulls out participants who do not have fixation ids
+fixation_count = gaze_copy.groupby("participant_folder")["fixation id"].sum().to_frame()
+no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
+null_participants = no_fixations.loc[:, "participant_folder"].to_list()
+gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 
 
 # Saccade dataframe
@@ -194,11 +194,11 @@ gaze_saccades["saccade duration(s)"] = gaze_saccades["saccade duration(s)"].fill
 gaze_saccades.loc[
     gaze_saccades["fixation id"].notnull(), "saccade duration(s)"
 ] = np.nan
+gaze_saccades["saccade distance"] = gaze_saccades["saccade distance"].fillna(
+    method="ffill"
+)
+gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade distance"] = np.nan
 gaze_saccades = gaze_saccades.drop(["duration", "gaze duration(s)"], axis=1)
-
-
-# Dataframe for testing, delete later
-saccade_test = gaze_saccades
 
 
 # Fixation dataframe
@@ -207,26 +207,137 @@ gaze_fixation["fixation id"].value_counts(dropna=False)
 gaze_fixation = gaze_fixation.drop("row_number", axis=1).reset_index(drop=True)
 
 # Fixation calculations
-fixations = gaze_fixation[["participant_folder", "fixation id", "gaze duration(s)"]]
-fix_durations = fixations.groupby(["participant_folder", "fixation id"])[
+fix_durations = gaze_fixation.groupby(["participant_folder", "fixation id"])[
     "gaze duration(s)"
 ].sum()
 fix_durations = fix_durations.to_frame()
 fix_durations = fix_durations.rename(
     {"gaze duration(s)": "fixation duration(s)"}, axis=1
 )
+fix_durations.reset_index(inplace=True)
+gaze_fixation = pd.merge(
+    gaze_fixation,
+    fix_durations,
+    left_on=["participant_folder", "fixation id"],
+    right_on=["participant_folder", "fixation id"],
+    how="left",
+)
 
-fix_mean = fix_durations.groupby("participant_folder")["fixation duration(s)"].mean()
+fix_mean = gaze_fixation.groupby("participant_folder")["fixation duration(s)"].mean()
 fix_mean = fix_mean.to_frame()
 fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
 
 overall_mean = fix_mean["mean fix duration(s)"].mean()
 
-# Test dataframe
-test_fix = gaze_fixation
+# Cumulative analysis dataframe
+fix_analysis = fix_mean.reset_index()
+
+
+# Fixations per second for each participant
+fix_per_time = gaze_fixed[
+    ["participant_folder", "fixation id", "duration"]
+].reset_index(drop=True)
+fix_per_time["time elapsed(s)"] = fix_per_time.groupby("participant_folder")[
+    "duration"
+].cumsum()
+
+fix_per_sec = (
+    fix_per_time.groupby(
+        ["participant_folder", pd.Grouper(key="time elapsed(s)", freq="1S")]
+    )["fixation id"]
+    .nunique()
+    .to_frame()
+)
+fix_per_sec = fix_per_sec.rename({"fixation id": "fixation freq"}, axis=1).reset_index()
+fix_per_sec_mean = (
+    fix_per_sec.groupby("participant_folder")["fixation freq"].mean().to_frame()
+)
+fix_per_sec_mean.reset_index(inplace=True)
+
+# Add fixations per second to analysis dataframe
+fix_analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+
+# Add demographic data to analysis dataframe
+fix_analysis = pd.merge(
+    fix_analysis,
+    demographic[
+        [
+            "School or degree course",
+            "Age",
+            "Educational Qualification",
+            "sesso",
+            "codice_eyetr_museo",
+        ]
+    ],
+    left_on="participant_folder",
+    right_on="codice_eyetr_museo",
+    how="left",
+)
+fix_analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
+fix_analysis.sort_values("Age", inplace=True)
+fix_analysis["age group"] = pd.cut(
+    fix_analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
+)
+
+
+# Fixation means with demographic data
+fix_mean_age = fix_analysis.groupby("age group")["mean fix duration(s)"].mean()
+fix_mean_edu = fix_analysis.groupby("Educational Qualification")[
+    "mean fix duration(s)"
+].mean()
+fix_mean_gender = fix_analysis.groupby("sesso")["mean fix duration(s)"].mean()
+
+
+# Fixation frequency per second with demographic data
+fix_per_sec_age = fix_analysis.groupby("age group")["fixation freq"].mean()
+fix_per_sec_edu = fix_analysis.groupby("Educational Qualification")[
+    "fixation freq"
+].mean()
+fix_per_sec_gender = fix_analysis.groupby("sesso")["fixation freq"].mean()
+
+
+# Trying to figure out the participants who don't have a fixation id
+gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+gaze_null.drop("row_number", axis=1, inplace=True)
+
+qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
+qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+qualify["angle(r)"] = qualify.apply(
+    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+)
+
+
+# Fixation time per feature
+tag_fix = (
+    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+)
+tag_fix.reset_index(inplace=True)
+tag_fix_avg = tag_fix.groupby("tag")["gaze duration(s)"].mean()
+
+gen_tag_fix = (
+    gaze_fixation.groupby(["participant_folder", "general tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+)
+gen_tag_fix.reset_index(inplace=True)
+gen_tag_fix_avg = gen_tag_fix.groupby("general tag")["gaze duration(s)"].mean()
 
 
 """
+total_dur = total_dur.rename({"gaze duration(s)": "total duration(s)"}, axis=1)
+fix_per_time = pd.merge(
+    fix_per_time,
+    total_dur,
+    left_on="participant_folder",
+    right_on="participant_folder",
+    how="left",
+)
+
 feature_time = gaze_copy.groupby("tag")["duration(s)"].sum()
 fixation_time = gaze_copy.groupby("tag")["fixation id"].sum()
 total_time = gaze_copy["duration(s)"].sum()

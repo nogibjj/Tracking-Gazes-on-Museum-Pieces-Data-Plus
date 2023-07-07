@@ -183,19 +183,105 @@ def save_outputs(
     updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
 
 
-def reference_image_finder(video_path: str, return_mse_list=False):
+# mse function for the reference image calculations
+def mse(img1, img2):
+    """Mean squared error function for
+    the image calculations."""
+    h, w = img1.shape
+    diff = cv2.subtract(img1, img2)
+    err = np.sum(diff**2)
+    mse = err / (float(h * w))
+    return mse
+
+
+def bucket_maker(frame_dictionary: dict, bucket_size=30):
+    """Makes buckets of frames for the best frame finder function.
+
+    The output is a list of lists with integer keys from the frame_dictionary."""
+    print("Making buckets of frames for the best frame finder function...")
+    frame_list = sorted(frame_dictionary.keys())
+
+    frame_list_indexes = [marker for marker in range(0, len(frame_list))][::bucket_size]
+
+    key_buckets = []
+
+    for idx, mark in enumerate(frame_list_indexes):
+        try:
+            key_buckets.extend(
+                [frame_list[frame_list_indexes[idx] : frame_list_indexes[idx + 1]]]
+            )
+
+        except:  # reached the end of the list
+            key_buckets.extend([frame_list[frame_list_indexes[idx] :]])
+
+    return key_buckets
+
+
+def best_frame_finder(
+    frame_dictionary: dict, frame_bucket: list[int], return_mse_list: bool = False
+):
+    """Finds the best frame in a group of frames by
+    choosing the one with the lowest MSE.
+
+    The output is a tuple with the best frame and its key.
+
+    Or a tuple with the best frame, its key, and a dictionary
+
+    of the MSEs of all the frames in the frame_bucket."""
+
+    frame_mse = dict()
+    frame_mse_with_list = dict()
+
+    for main_key in frame_bucket:
+        # print(f"The main key is {main_key}")
+        copy_bucket = frame_bucket.copy()
+        copy_bucket.pop(copy_bucket.index(main_key))
+        mse_list = list()
+
+        for other_key in copy_bucket:
+            mse_list.extend(
+                [mse(frame_dictionary[main_key], frame_dictionary[other_key])]
+            )
+
+            # Mean is the best option.
+            # Mode won't work because the participant is never still.
+            # Median is not necessary because it is a metric meant to
+            # protect against outliers.
+            # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+            # those 20 bad ones will be outliers in all the MSEs of the
+            # good frames, but the bads will simultaneously have the worst MSE.
+        frame_mse[main_key] = np.mean(mse_list.copy())
+        frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+        # print(f"Obtained MSE for video frame: {main_key}")
+    best_frame_num = min(frame_mse, key=frame_mse.get)
+    best_frame = frame_dictionary[best_frame_num]
+
+    if return_mse_list:
+        return best_frame, best_frame_num, frame_mse_with_list
+
+    else:
+        return best_frame, best_frame_num
+
+
+def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
     """Finds the best possible reference image in a video.
 
     It looks for the frame with the lowest
-    mean squared error (MSE) when compared to all of its other frames."""
+    mean squared error (MSE) when compared to all of its other frames.
 
-    # mse function for the image calculations
-    def mse(img1, img2):
-        h, w = img1.shape
-        diff = cv2.subtract(img1, img2)
-        err = np.sum(diff**2)
-        mse = err / (float(h * w))
-        return mse
+    Buckets is 30 due to most videos being recorded at 30 fps.
+
+    A 5 minute video will have 9000 frames.
+
+    Then, 9000/30 = 300 buckets.
+
+    Those 300 buckets will be broken down into
+
+    buckets equal to the number of minutes, to finally end up
+
+    with the last few candidate, reference frames.
+
+    The number of minutes in a video is unimportant."""
 
     cap = cv2.VideoCapture(video_path)
     frame_dictionary_gray = dict()
@@ -219,37 +305,266 @@ def reference_image_finder(video_path: str, return_mse_list=False):
 
     cv2.destroyAllWindows()
     cap.release()
-    frame_mse = dict()
-    frame_mse_with_list = dict()
 
-    for main_key in frame_dictionary_gray:
-        copy_dn = frame_dictionary_gray.copy()
-        copy_dn.pop(main_key)
-        mse_list = list()
+    # obtaining the buckets for computational efficiency
 
-        for other_key in copy_dn:
-            mse_list.extend([mse(frame_dictionary_gray[main_key], copy_dn[other_key])])
+    # The purpose of using the 30 as an argument in bucket_maker
+    # is to eventually obtain the best frame per second.
+    # This argument can be changed and should be the frame rate of the video.
 
-        # Mean is the best option.
-        # Mode won't work because the participant is never still.
-        # Median is not necessary because it is a metric meant to
-        # protect against outliers.
-        # However, in a video with 1000 frames and 20 jittery/uncommon ones,
-        # those 20 bad ones will be outliers in all the MSEs of the
-        # good frames, but they will simultaneously have the worst MSE.
-        frame_mse[main_key] = np.mean(mse_list.copy())
-        frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+    thirty_fps_buckets = bucket_maker(frame_dictionary_gray, bucket_size=buckets)
 
-    best_frame_num = min(frame_mse, key=frame_mse.get)
-    best_frame = frame_dictionary_original[best_frame_num]
+    # finding the best frame in each bucket
 
-    print(f"Obtained best frame for video : {best_frame_num}")
+    best_frames_per_second = dict()
 
-    if return_mse_list:
-        return best_frame, frame_mse_with_list
+    for bucket in thirty_fps_buckets:
+        best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+            frame_dictionary_gray, bucket
+        )
+        best_frames_per_second[best_bucket_frame_num] = best_bucket_frame.copy()
 
-    else:
-        return best_frame
+    # finding the best frame per minute
+    # Change the bucket size to 60,
+    # because there are 60 seconds in a minute.
+    # And the best frame per second is already found.
+    # So, one best frame will be chosen once more to represent
+    # the best frame per minute.
+    # This is done to reduce the number of frames to be processed
+    # In addition, don't change the bucket size in the following
+    # function call, since it represents the number of seconds
+    # in a minute.
+
+    sixty_seconds_buckets = bucket_maker(best_frames_per_second, bucket_size=60)
+
+    # finding the best frame per minute
+
+    best_frames_per_minute = dict()
+
+    for bucket in sixty_seconds_buckets:
+        best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+            best_frames_per_second, bucket
+        )
+        best_frames_per_minute[best_bucket_frame_num] = best_bucket_frame.copy()
+
+    # finding the final best frame to become the reference frame
+
+    _, reference_frame_num = best_frame_finder(
+        best_frames_per_minute, list(best_frames_per_minute.keys())
+    )
+
+    reference_frame_original = frame_dictionary_original[reference_frame_num]
+
+    return reference_frame_original
+
+
+# def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
+#     """Finds the best possible reference image in a video.
+
+#     It looks for the frame with the lowest
+#     mean squared error (MSE) when compared to all of its other frames.
+
+#     Buckets is 30 due to most videos being recorded at 30 fps.
+#     It can be modified to any number.
+
+#     A 5 minute video will have 9000 frames.
+
+#     Then, 9000/30 = 300 buckets.
+
+#     Those 300 buckets will be broken down into
+
+#     buckets equal to the number of minutes, to finally end up
+
+#     with the last few candidate, reference frames.
+
+#     The number of minutes in a video is unimportant."""
+
+#     cap = cv2.VideoCapture(video_path)
+#     frame_dictionary_gray = dict()
+#     frame_dictionary_original = dict()
+#     frame_number = 0
+#     while cap.isOpened():
+#         success, frame = cap.read()
+
+#         if success:
+#             frame_number += 1
+#             frame_dictionary_original[frame_number] = frame.copy()
+#             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#             frame_dictionary_gray[frame_number] = gray_frame.copy()
+
+#         else:
+#             print("Done storing the video frames for MSE")
+#             print(
+#                 f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+#             )
+#             break
+
+#     cv2.destroyAllWindows()
+#     cap.release()
+
+#     ordered_keys = sorted(frame_dictionary_gray.keys())
+#     ordered_keys = ordered_keys[::buckets]
+
+#     for key in ordered_keys:
+#         frame_mse = dict()
+#         frame_mse_with_list = dict()
+
+#         for main_key in frame_dictionary_gray:
+#             copy_dn = frame_dictionary_gray.copy()
+#             copy_dn.pop(main_key)
+#             mse_list = list()
+
+#             for other_key in copy_dn:
+#                 mse_list.extend(
+#                     [mse(frame_dictionary_gray[main_key], copy_dn[other_key])]
+#                 )
+
+#             # Mean is the best option.
+#             # Mode won't work because the participant is never still.
+#             # Median is not necessary because it is a metric meant to
+#             # protect against outliers.
+#             # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+#             # those 20 bad ones will be outliers in all the MSEs of the
+#             # good frames, but the bads will simultaneously have the worst MSE.
+#             frame_mse[main_key] = np.mean(mse_list.copy())
+#             frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+#             print(f"Obtained MSE for video frame: {main_key}")
+#         best_frame_num = min(frame_mse, key=frame_mse.get)
+#         best_frame = frame_dictionary_original[best_frame_num]
+
+#     frame_mse = dict()
+#     frame_mse_with_list = dict()
+
+#     for main_key in frame_dictionary_gray:
+#         copy_dn = frame_dictionary_gray.copy()
+#         copy_dn.pop(main_key)
+#         mse_list = list()
+
+#         for other_key in copy_dn:
+#             mse_list.extend([mse(frame_dictionary_gray[main_key], copy_dn[other_key])])
+
+#         # Mean is the best option.
+#         # Mode won't work because the participant is never still.
+#         # Median is not necessary because it is a metric meant to
+#         # protect against outliers.
+#         # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+#         # those 20 bad ones will be outliers in all the MSEs of the
+#         # good frames, but the bads will simultaneously have the worst MSE.
+#         frame_mse[main_key] = np.mean(mse_list.copy())
+#         frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+#         print(f"Obtained MSE for video frame: {main_key}")
+#     best_frame_num = min(frame_mse, key=frame_mse.get)
+#     best_frame = frame_dictionary_original[best_frame_num]
+
+#     print(f"Obtained best frame for video : {best_frame_num}")
+
+#     if return_mse_list:
+#         return best_frame, frame_mse_with_list
+
+#     else:
+#         return best_frame
+
+
+# def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
+#     """Finds the best possible reference image in a video.
+
+#     It looks for the frame with the lowest
+#     mean squared error (MSE) when compared to all of its other frames.
+
+#     Buckets is 30 due to most videos being recorded at 30 fps."""
+
+#     # mse function for the image calculations
+#     def mse(img1, img2):
+#         h, w = img1.shape
+#         diff = cv2.subtract(img1, img2)
+#         err = np.sum(diff**2)
+#         mse = err / (float(h * w))
+#         return mse
+
+#     cap = cv2.VideoCapture(video_path)
+#     frame_dictionary_gray = dict()
+#     frame_dictionary_original = dict()
+#     frame_number = 0
+#     while cap.isOpened():
+#         success, frame = cap.read()
+
+#         if success:
+#             frame_number += 1
+#             frame_dictionary_original[frame_number] = frame.copy()
+#             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#             frame_dictionary_gray[frame_number] = gray_frame.copy()
+
+#         else:
+#             print("Done storing the video frames for MSE")
+#             print(
+#                 f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+#             )
+#             break
+
+#     cv2.destroyAllWindows()
+#     cap.release()
+
+#     ordered_keys = sorted(frame_dictionary_gray.keys())
+#     ordered_keys = ordered_keys[::buckets]
+
+#     for key in ordered_keys:
+#         frame_mse = dict()
+#         frame_mse_with_list = dict()
+
+#         for main_key in frame_dictionary_gray:
+#             copy_dn = frame_dictionary_gray.copy()
+#             copy_dn.pop(main_key)
+#             mse_list = list()
+
+#             for other_key in copy_dn:
+#                 mse_list.extend(
+#                     [mse(frame_dictionary_gray[main_key], copy_dn[other_key])]
+#                 )
+
+#             # Mean is the best option.
+#             # Mode won't work because the participant is never still.
+#             # Median is not necessary because it is a metric meant to
+#             # protect against outliers.
+#             # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+#             # those 20 bad ones will be outliers in all the MSEs of the
+#             # good frames, but the bads will simultaneously have the worst MSE.
+#             frame_mse[main_key] = np.mean(mse_list.copy())
+#             frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+#             print(f"Obtained MSE for video frame: {main_key}")
+#         best_frame_num = min(frame_mse, key=frame_mse.get)
+#         best_frame = frame_dictionary_original[best_frame_num]
+
+#     frame_mse = dict()
+#     frame_mse_with_list = dict()
+
+#     for main_key in frame_dictionary_gray:
+#         copy_dn = frame_dictionary_gray.copy()
+#         copy_dn.pop(main_key)
+#         mse_list = list()
+
+#         for other_key in copy_dn:
+#             mse_list.extend([mse(frame_dictionary_gray[main_key], copy_dn[other_key])])
+
+#         # Mean is the best option.
+#         # Mode won't work because the participant is never still.
+#         # Median is not necessary because it is a metric meant to
+#         # protect against outliers.
+#         # However, in a video with 1000 frames and 20 jittery/uncommon ones,
+#         # those 20 bad ones will be outliers in all the MSEs of the
+#         # good frames, but the bads will simultaneously have the worst MSE.
+#         frame_mse[main_key] = np.mean(mse_list.copy())
+#         frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
+#         print(f"Obtained MSE for video frame: {main_key}")
+#     best_frame_num = min(frame_mse, key=frame_mse.get)
+#     best_frame = frame_dictionary_original[best_frame_num]
+
+#     print(f"Obtained best frame for video : {best_frame_num}")
+
+#     if return_mse_list:
+#         return best_frame, frame_mse_with_list
+
+#     else:
+#         return best_frame
 
 
 """
