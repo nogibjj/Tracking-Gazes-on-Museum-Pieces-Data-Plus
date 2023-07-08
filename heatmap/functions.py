@@ -284,38 +284,99 @@ def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
     The number of minutes in a video is unimportant."""
 
     cap = cv2.VideoCapture(video_path)
+    final_frame_dictionary_gray = dict()
+    final_frame_dictionary_original = dict()
     frame_dictionary_gray = dict()
     frame_dictionary_original = dict()
     temp_frame_dictionary_original = dict()
     temp_frame_dictionary_gray = dict()
     frame_number = 0
+    frame_counter = 0
+    minute_frame_counter = 0
     while cap.isOpened():
         success, frame = cap.read()
 
         if success:
             frame_number += 1
+            frame_counter += 1
             temp_frame_dictionary_original[frame_number] = frame.copy()
             gray_frame = cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2GRAY)
             temp_frame_dictionary_gray[frame_number] = gray_frame.copy()
 
-            if frame_number == 30:
+            if frame_counter == buckets:
                 best_bucket_frame, best_bucket_frame_num = best_frame_finder(
                     temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
                 )
-                print(f"Best frame for bucket : {best_bucket_frame_num}")
+                print(
+                    f"Best frame for bucket {frame_number-buckets}-{frame_number}: {best_bucket_frame_num}"
+                )
                 frame_dictionary_gray[best_bucket_frame_num] = best_bucket_frame.copy()
                 frame_dictionary_original[
                     best_bucket_frame_num
+                ] = temp_frame_dictionary_original[best_bucket_frame_num].copy()
+                temp_frame_dictionary_gray = dict()
+                temp_frame_dictionary_original = dict()
+                frame_counter = 0
+                minute_frame_counter += 1
+
+            elif minute_frame_counter == 60:
+                best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+                    frame_dictionary_gray, list(frame_dictionary_gray.keys())
+                )
+                print(f"Best frame for bucket 60 : {best_bucket_frame_num}")
+                final_frame_dictionary_gray[
+                    best_bucket_frame_num
                 ] = best_bucket_frame.copy()
+                final_frame_dictionary_original[
+                    best_bucket_frame_num
+                ] = frame_dictionary_original[best_bucket_frame_num].copy()
+                frame_dictionary_gray = dict()
+                frame_dictionary_original = dict()
+                minute_frame_counter = 0
 
         else:
-            final_bucket_frame, final_bucket_frame_num = best_frame_finder(
-                temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
+            if (
+                len(list(temp_frame_dictionary_gray.keys())) == 0
+                and len(list(frame_dictionary_gray.keys())) == 0
+            ):
+                # if it is empty, no more frames have been registered
+                print("No frames present in temp frame and frame dictionaries")
+
+                break
+
+            # assume a case in which temp has some frames and/or
+            # frame_dictionary_gray or original has frames
+
+            try:
+                final_bucket_frame, final_bucket_frame_num = best_frame_finder(
+                    temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
+                )
+
+                frame_dictionary_gray[
+                    final_bucket_frame_num
+                ] = final_bucket_frame.copy()
+                frame_dictionary_original[
+                    final_bucket_frame_num
+                ] = temp_frame_dictionary_original[final_bucket_frame_num].copy()
+
+                print("Excess frames present in temp frame dictionaries")
+
+            except:
+                print("Excess frames not present in temp frame dictionaries")
+
+            best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+                frame_dictionary_gray, list(frame_dictionary_gray.keys())
             )
-            frame_dictionary_gray[final_bucket_frame_num] = final_bucket_frame.copy()
-            frame_dictionary_original[
-                final_bucket_frame_num
-            ] = final_bucket_frame.copy()
+
+            final_frame_dictionary_gray[
+                best_bucket_frame_num
+            ] = best_bucket_frame.copy()
+            final_frame_dictionary_original[
+                best_bucket_frame_num
+            ] = frame_dictionary_original[best_bucket_frame_num].copy()
+
+            # if video is not a minute long
+
             print("Done storing the video frames for MSE")
             print(
                 f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
@@ -331,17 +392,17 @@ def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
     # is to eventually obtain the best frame per second.
     # This argument can be changed and should be the frame rate of the video.
 
-    thirty_fps_buckets = bucket_maker(frame_dictionary_gray, bucket_size=buckets)
+    # thirty_fps_buckets = bucket_maker(frame_dictionary_gray, bucket_size=buckets)
 
     # finding the best frame in each bucket
 
-    best_frames_per_second = dict()
+    # best_frames_per_second = dict()
 
-    for bucket in thirty_fps_buckets:
-        best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-            frame_dictionary_gray, bucket
-        )
-        best_frames_per_second[best_bucket_frame_num] = best_bucket_frame.copy()
+    # for bucket in thirty_fps_buckets:
+    #     best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+    #         frame_dictionary_gray, bucket
+    #     )
+    #     best_frames_per_second[best_bucket_frame_num] = best_bucket_frame.copy()
 
     # finding the best frame per minute
     # Change the bucket size to 60,
@@ -354,25 +415,27 @@ def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
     # function call, since it represents the number of seconds
     # in a minute.
 
-    sixty_seconds_buckets = bucket_maker(best_frames_per_second, bucket_size=60)
-
+    # sixty_seconds_buckets = bucket_maker(best_frames_per_second, bucket_size=60)
+    # sixty_seconds_buckets = bucket_maker(frame_dictionary_gray, bucket_size=60)
     # finding the best frame per minute
 
-    best_frames_per_minute = dict()
+    # best_frames_per_minute = dict()
 
-    for bucket in sixty_seconds_buckets:
-        best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-            best_frames_per_second, bucket
-        )
-        best_frames_per_minute[best_bucket_frame_num] = best_bucket_frame.copy()
+    # for bucket in sixty_seconds_buckets:
+    #     best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+    #         best_frames_per_second, bucket
+    #     )
+    #     best_frames_per_minute[best_bucket_frame_num] = best_bucket_frame.copy()
 
     # finding the final best frame to become the reference frame
 
     _, reference_frame_num = best_frame_finder(
-        best_frames_per_minute, list(best_frames_per_minute.keys())
+        final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
     )
 
-    reference_frame_original = frame_dictionary_original[reference_frame_num]
+    reference_frame_original = final_frame_dictionary_original[reference_frame_num]
+
+    print(f"Obtained best frame for video : {reference_frame_num}")
 
     return reference_frame_original
 
@@ -468,7 +531,7 @@ def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
 #     )
 
 #     reference_frame_original = frame_dictionary_original[reference_frame_num]
-
+#     print(f"Obtained best frame for video : {reference_frame_num}")
 #     return reference_frame_original
 
 
