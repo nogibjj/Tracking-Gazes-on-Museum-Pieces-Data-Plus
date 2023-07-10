@@ -289,11 +289,46 @@ vts = analysis_vts[analysis_vts["vts_bool"] == True]
 nonvts = analysis_vts[analysis_vts["vts_bool"] == False]
 
 # Visualizations (boxplot)
+plt.style.use("ggplot")
+
 fix_dur_plot = analysis_vts.boxplot(column="mean fix duration(s)", by="vts_bool")
 plt.xlabel("")
 plt.ylabel("Duration(s)")
 plt.title("Mean Fixation Duration(s) in VTS vs Non-VTS Participants")
 plt.suptitle("")
+plt.savefig("Mean Fixation Duration(s) Plot")
+plt.show()
+
+fix_freq_plot = analysis_vts.boxplot(column="fixation freq", by="vts_bool")
+plt.xlabel("")
+plt.ylabel("Frequency per second")
+plt.title("Mean Fixation Frequency in VTS vs Non-VTS Participants")
+plt.suptitle("")
+plt.savefig("Mean Fixation Frequency Plot")
+plt.show()
+
+sac_dur_plot = analysis_vts.boxplot(column="mean sac duration(s)", by="vts_bool")
+plt.xlabel("")
+plt.ylabel("Duration(s)")
+plt.title("Mean Saccade Duration(s) in VTS vs Non-VTS Participants")
+plt.suptitle("")
+plt.savefig("Mean Saccade Duration(s) Plot")
+plt.show()
+
+sac_dist_plot = analysis_vts.boxplot(column="mean sac distance", by="vts_bool")
+plt.xlabel("")
+plt.ylabel("Distance(px)")
+plt.title("Mean Saccade Distance in VTS vs Non-VTS Participants")
+plt.suptitle("")
+plt.savefig("Mean Saccade Distance Plot")
+plt.show()
+
+sac_freq_plot = analysis_vts.boxplot(column="saccade freq", by="vts_bool")
+plt.xlabel("")
+plt.ylabel("Frequency per second")
+plt.title("Mean Saccade Frequency in VTS vs Non-VTS Participants")
+plt.suptitle("")
+plt.savefig("Mean Saccade Frequency Plot")
 plt.show()
 
 
