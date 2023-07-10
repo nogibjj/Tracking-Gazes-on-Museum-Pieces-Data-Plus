@@ -28,7 +28,9 @@ video = cv2.VideoWriter('video.avi', fourcc, 30, (width, height))
 frame_no = 1
 prev_point = None
 queue = []
-keep_last = 5
+keep_last = 100
+
+
 while(cap.isOpened()):
     frame_exists, curr_frame = cap.read()
     
@@ -43,30 +45,38 @@ while(cap.isOpened()):
             fixation_center = fixation_centers[fixation_centers['fixation id'] == fixation_id].reset_index()
             curr_centre_x = round(fixation_center['x_smooth'][0])
             curr_centre_y = round(fixation_center['y_smooth'][0])
-            curr_frame = cv2.circle(curr_frame, (curr_centre_x, curr_centre_y), 55, (0,0,255), 1)
+            # curr_frame = cv2.circle(curr_frame, (curr_centre_x, curr_centre_y), 15, (0,0,255), 2)
 
-            
+            queue.append((x_pixel, y_pixel))
             if fixation_id > 1:
                 prev_fixation_center = fixation_centers[fixation_centers['fixation id'] == (fixation_id - 1)].reset_index()
                 prev_centre_x = round(prev_fixation_center['x_smooth'][0])
                 prev_centre_y = round(prev_fixation_center['y_smooth'][0])
 
-                curr_frame = cv2.line(curr_frame, (curr_centre_x, curr_centre_y), (prev_centre_x, prev_centre_y), (255, 255, 255), 5)
+                # curr_frame = cv2.line(curr_frame, (curr_centre_x, curr_centre_y), (prev_centre_x, prev_centre_y), (255, 255, 255), 3)
         
         # if prev_point:
         #     curr_frame = cv2.line(curr_frame, prev_point, (x_pixel, y_pixel), (255, 255, 255), 5) 
 
-        prev_point = (x_pixel, y_pixel)
+        # prev_point = (x_pixel, y_pixel)
 
-        curr_frame = cv2.circle(curr_frame, (x_pixel, y_pixel), 15, (0,0,255), 2)
-        op = curr_frame.copy()
+        # curr_frame = cv2.circle(curr_frame, (x_pixel, y_pixel), 15, (0,0,255), 2)
+
+        
+        if len(queue) > keep_last:
+            curr_frame = cv2.circle(curr_frame, queue[-1], 15, (0,0,255), 2)
+            for idx, point in enumerate(queue):
+                if idx !=0 :
+                    curr_frame = cv2.line(curr_frame, point, queue[idx-1], (255, 255, 255), 3)
+
+            queue.pop(0) 
         video.write(curr_frame)
         
     else:
         break
 
+
     frame_no += 1
 
 cap.release()
 video.release()
-cv2.imwrite('op.png', op)
