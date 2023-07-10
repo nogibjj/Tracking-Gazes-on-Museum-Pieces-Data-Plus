@@ -288,45 +288,54 @@ analysis_vts["vts_bool"] = analysis_vts["vts_bool"].map({False: "Non-VTS", True:
 vts = analysis_vts[analysis_vts["vts_bool"] == True]
 nonvts = analysis_vts[analysis_vts["vts_bool"] == False]
 
+# Overall means
+vts_analysis = analysis_vts.drop(["participant_folder", "mode sac direction"], axis=1)
+analysis_mean = vts_analysis.groupby("vts_bool").mean().transpose()
+analysis_mean["Overall Mean"] = (analysis_mean["Non-VTS"] + analysis_mean["VTS"]) / 2
+
+# Make tables an excel
+analysis_vts.to_excel("vulci-raw-metrics.xlsx")
+analysis_mean.to_excel("overall-means.xlsx")
+
 # Visualizations (boxplot)
 plt.style.use("ggplot")
 
 fix_dur_plot = analysis_vts.boxplot(column="mean fix duration(s)", by="vts_bool")
-plt.xlabel("")
+plt.xlabel("Group")
 plt.ylabel("Duration(s)")
-plt.title("Mean Fixation Duration(s) in VTS vs Non-VTS Participants")
+plt.title("Fixation Duration(s) in VTS vs Non-VTS Participants")
 plt.suptitle("")
 plt.savefig("Mean Fixation Duration(s) Plot")
 plt.show()
 
 fix_freq_plot = analysis_vts.boxplot(column="fixation freq", by="vts_bool")
-plt.xlabel("")
+plt.xlabel("Group")
 plt.ylabel("Frequency per second")
-plt.title("Mean Fixation Frequency in VTS vs Non-VTS Participants")
+plt.title("Fixation Frequency in VTS vs Non-VTS Participants")
 plt.suptitle("")
 plt.savefig("Mean Fixation Frequency Plot")
 plt.show()
 
 sac_dur_plot = analysis_vts.boxplot(column="mean sac duration(s)", by="vts_bool")
-plt.xlabel("")
+plt.xlabel("Group")
 plt.ylabel("Duration(s)")
-plt.title("Mean Saccade Duration(s) in VTS vs Non-VTS Participants")
+plt.title("Saccade Duration(s) in VTS vs Non-VTS Participants")
 plt.suptitle("")
 plt.savefig("Mean Saccade Duration(s) Plot")
 plt.show()
 
 sac_dist_plot = analysis_vts.boxplot(column="mean sac distance", by="vts_bool")
-plt.xlabel("")
+plt.xlabel("Group")
 plt.ylabel("Distance(px)")
-plt.title("Mean Saccade Distance in VTS vs Non-VTS Participants")
+plt.title("Saccade Distance in VTS vs Non-VTS Participants")
 plt.suptitle("")
 plt.savefig("Mean Saccade Distance Plot")
 plt.show()
 
 sac_freq_plot = analysis_vts.boxplot(column="saccade freq", by="vts_bool")
-plt.xlabel("")
+plt.xlabel("Group")
 plt.ylabel("Frequency per second")
-plt.title("Mean Saccade Frequency in VTS vs Non-VTS Participants")
+plt.title("Saccade Frequency in VTS vs Non-VTS Participants")
 plt.suptitle("")
 plt.savefig("Mean Saccade Frequency Plot")
 plt.show()
