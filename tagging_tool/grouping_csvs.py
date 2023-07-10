@@ -41,15 +41,23 @@ ART_PIECE = env_var.ART_PIECE  # a list
 
 participant_paths_folders = []
 
-num_folders = len(participant_paths_folders)
 
 for folder in os.listdir(ROOT_PATH):
     try:
         new_path = os.path.join(ROOT_PATH, folder)
-        os.listdir(new_path)
-        print(f"Running for folder -- {folder}")
-        print(f"{folder} is a directory")
-        participant_paths_folders.append(new_path)
+        # os.listdir(new_path)
+        for special_file in os.listdir(new_path):
+            try:
+                further_path = os.path.join(new_path, special_file)
+                os.listdir(further_path)
+                print(f"{special_file} is a new data directory")
+                participant_paths_folders.append(further_path)
+            except:
+                print(f"{special_file} is a file")
+                continue
+        # print(f"Running for folder -- {folder}")
+        # print(f"{folder} is a directory")
+        # participant_paths_folders.append(new_path)
 
     except:
         print(f"{folder} is a file")
@@ -58,6 +66,7 @@ for folder in os.listdir(ROOT_PATH):
 checkpoint = False
 last_folder = None
 participant_paths_folders = sorted(participant_paths_folders)
+num_folders = len(participant_paths_folders)
 
 if checkpoint:
     index_change = participant_paths_folders.index(last_folder)
@@ -65,6 +74,7 @@ if checkpoint:
     participant_paths_folders = participant_paths_folders[index_change + 1 :]
 
 participant_list = []
+vts_kids = []
 
 # fixing news issue - Warning - Temporary fix
 for folder in participant_paths_folders:
@@ -84,23 +94,30 @@ for folder in participant_paths_folders:
         if not (flip_flag):
             participant_list.append(participant_id)
             flip_flag = False
+
     else:
         participant_list.append(participant_id)
+        if "vts" in folder.lower():
+            vts_kids.append(participant_id)
 
 # Concatenate all the tagged csvs into one big csv
 # after preprocessing their timestamps
-
+assert len(participant_paths_folders) == 38
+assert len(participant_list) == 38
 target_csv = pd.DataFrame()
 
 ideal_rows = 0
 participant_count = 0
 for folder in participant_paths_folders:
     files = os.listdir(folder)
+    participant_id = folder.split(os.sep)[-1]
 
-    if "final_gaze_tagged.csv" in files:
+    # if "final_gaze_tagged.csv" in files:
+    if "gaze.csv" in files:
         print(f"file found in Processing {folder}")
         participant_count += 1
-        gaze_csv_path = os.path.join(folder, "final_gaze_tagged.csv")
+        # gaze_csv_path = os.path.join(folder, "final_gaze_tagged.csv")
+        gaze_csv_path = os.path.join(folder, "gaze.csv")
         # print(gaze_csv_path)
         # For now, we will keep the timestamp_corrector step
         # It might be redundant, but it is a good sanity check
@@ -113,10 +130,20 @@ for folder in participant_paths_folders:
             gaze_csv["art_piece"] = ART_PIECE[0]
 
         gaze_csv["participant_id"] = participant_count
+        if participant_id in vts_kids:
+            gaze_csv["vts_bool"] = True
+        else:
+            gaze_csv["vts_bool"] = False
         ideal_rows += gaze_csv.shape[0]
         target_csv = pd.concat([target_csv, gaze_csv], axis=0)
 
-target_csv.drop(columns=["Unnamed: 0"], inplace=True)
+try:
+    target_csv.drop(columns=["Unnamed: 0"], inplace=True)
+
+except:
+    print("No Unnamed column found")
+    pass
+
 assert ideal_rows == target_csv.shape[0]
 
 
@@ -133,5 +160,5 @@ except AssertionError:
         f.write(f"Number of folders found: {num_folders}")
         f.write(f"Participant count does not match number of folders")
 
-target_csv.to_csv("data/all_gaze.csv", index=False, compression="gzip")
+target_csv.to_csv("../data/all_gaze.csv", index=False, compression="gzip")
 print("all_gaze.csv created")
