@@ -59,6 +59,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
 
     csv_file = os.path.join(folder, "gaze.csv")
     video_file = os.path.join(folder, "*.mp4")
+    print(video_file)
     video_file = glob.glob(video_file)[0]
 
     gaze_df = pd.read_csv(csv_file)
