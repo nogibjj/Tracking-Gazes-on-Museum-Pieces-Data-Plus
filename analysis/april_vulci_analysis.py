@@ -4,6 +4,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import math
 
 
@@ -27,13 +28,14 @@ print(sys.path)
 all_gaze = pd.read_csv("../data/all_gaze.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
+gaze_copy = all_gaze
 
 # Timestamps
-gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
+gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
+gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
+gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
 # Durations
 gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
@@ -53,7 +55,7 @@ gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 
 # Saccade dataframe
 fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
-id = gaze_fixed.groupby("fixation id")
+id = gaze_fixed.groupby(["participant_folder", "fixation id"])
 fixation = (
     pd.concat([id.head(1), id.tail(1)])
     .drop_duplicates()
@@ -63,6 +65,7 @@ fixation = (
 gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 gaze_saccades = gaze_saccades.drop("row_number", axis=1)
+gaze_saccades.reset_index(inplace=True)
 
 # Saccade calculations
 saccade_calc = gaze_saccades[gaze_saccades["fixation id"].notnull()]
@@ -104,7 +107,6 @@ choices = [
 ]
 
 saccade_calc["saccade direction"] = np.select(conditions, choices, "none")
-saccade_calc = saccade_calc.reset_index(drop=True)
 saccade_calc = saccade_calc[
     [
         "index",
@@ -115,10 +117,17 @@ saccade_calc = saccade_calc[
         "saccade direction",
     ]
 ]
+saccade_calc.reset_index(drop=True, inplace=True)
 
 gaze_saccades = pd.merge(
-    gaze_saccades, saccade_calc, left_on="index", right_on="index", how="left"
+    gaze_saccades, saccade_calc, left_on=["index"], right_on="index", how="left"
 )
+id2 = gaze_saccades.groupby(["participant_folder", "fixation id"])
+rearrange = gaze_saccades[gaze_saccades["fixation id"].isnull()]
+gaze_saccades = pd.concat([id2.tail(1)])
+gaze_saccades = pd.concat([rearrange, gaze_saccades])
+gaze_saccades = gaze_saccades.sort_values("index").reset_index(drop=True)
+gaze_saccades.reset_index(drop=True, inplace=True)
 
 # Insert empty row if saccade isn't recorded
 m = gaze_saccades["fixation id"].isna()
@@ -186,24 +195,25 @@ sac_per_sec_mean = (
 )
 sac_per_sec_mean.reset_index(inplace=True)
 
+# Most common saccade direction
+direction_mode = (
+    gaze_saccades.groupby("participant_folder")["saccade direction"]
+    .agg(pd.Series.mode)
+    .to_frame()
+)
+direction_mode.reset_index(inplace=True)
 
-# Organizing saccade calcuations
-gaze_saccades["saccade direction"] = gaze_saccades["saccade direction"].fillna(
-    method="ffill"
+# Mean saccade distance
+sac_distance_mean = (
+    gaze_saccades.groupby("participant_folder")["saccade distance"].mean().to_frame()
 )
-gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade direction"] = np.nan
-gaze_saccades["saccade duration(s)"] = gaze_saccades["saccade duration(s)"].fillna(
-    method="ffill"
-)
-gaze_saccades.loc[
-    gaze_saccades["fixation id"].notnull(), "saccade duration(s)"
-] = np.nan
-gaze_saccades["saccade distance"] = gaze_saccades["saccade distance"].fillna(
-    method="ffill"
-)
-gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade distance"] = np.nan
-gaze_saccades = gaze_saccades.drop(["duration", "gaze duration(s)"], axis=1)
+sac_distance_mean.reset_index(inplace=True)
 
+# Mean saccade duration
+sac_dur_mean = (
+    gaze_saccades.groupby("participant_folder")["saccade duration(s)"].mean().to_frame()
+)
+sac_dur_mean.reset_index(inplace=True)
 
 # Fixation dataframe
 gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
@@ -233,10 +243,6 @@ fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axi
 
 overall_mean = fix_mean["mean fix duration(s)"].mean()
 
-# Cumulative analysis dataframe
-fix_analysis = fix_mean.reset_index()
-
-
 # Fixations per second for each participant
 fix_per_time = gaze_fixed[
     ["participant_folder", "fixation id", "duration"]
@@ -258,5 +264,89 @@ fix_per_sec_mean = (
 )
 fix_per_sec_mean.reset_index(inplace=True)
 
-# Add fixations per second to analysis dataframe
-fix_analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+
+# Putting together cumulative analysis dataframe
+analysis = fix_mean.reset_index()
+analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+analysis["mean sac duration(s)"] = sac_dur_mean["saccade duration(s)"]
+analysis["mean sac distance"] = sac_distance_mean["saccade distance"]
+analysis["mode sac direction"] = direction_mode["saccade direction"]
+analysis["saccade freq"] = sac_per_sec_mean["saccade freq"]
+
+# VTS vs non-VTS
+analysis_vts = pd.merge(
+    analysis,
+    gaze_fixed[["participant_folder", "vts_bool"]],
+    left_on="participant_folder",
+    right_on="participant_folder",
+    how="left",
+)
+id3 = analysis_vts.groupby("participant_folder")
+analysis_vts = pd.concat([id3.head(1)])
+analysis_vts.reset_index(drop=True, inplace=True)
+analysis_vts["vts_bool"] = analysis_vts["vts_bool"].map({False: "Non-VTS", True: "VTS"})
+vts = analysis_vts[analysis_vts["vts_bool"] == True]
+nonvts = analysis_vts[analysis_vts["vts_bool"] == False]
+
+# Visualizations (boxplot)
+fix_dur_plot = analysis_vts.boxplot(column="mean fix duration(s)", by="vts_bool")
+plt.xlabel("")
+plt.ylabel("Duration(s)")
+plt.title("Mean Fixation Duration(s) in VTS vs Non-VTS Participants")
+plt.suptitle("")
+plt.show()
+
+
+"""vtslist = [vts['mean fix duration(s)'], vts['mean sac duration(s)']]
+nonvtslist = [nonvts['mean fix duration(s)'], nonvts['mean sac duration(s)']]
+ 
+# the list named ticks, summarizes or groups
+# the summer and winter rainfall as low, mid
+# and high
+ticks = ['Fixations', 'Saccades']
+ 
+# create a boxplot for two arrays separately,
+# the position specifies the location of the
+# particular box in the graph,
+# this can be changed as per your wish. Use width
+# to specify the width of the plot
+vts_plot = plt.boxplot(vtslist,
+                               positions=np.array(
+    np.arange(len(vtslist)))*2.0-0.35,
+                               widths=0.6, showfliers=False)
+nonvts_plot = plt.boxplot(nonvtslist,
+                               positions=np.array(
+    np.arange(len(nonvtslist)))*2.0+0.35,
+                               widths=0.6, showfliers=False)
+ 
+# each plot returns a dictionary, use plt.setp()
+# function to assign the color code
+# for all properties of the box plot of particular group
+# use the below function to set color for particular group,
+# by iterating over all properties of the box plot
+def define_box_properties(plot_name, color_code, label):
+    for k, v in plot_name.items():
+        plt.setp(plot_name.get(k), color=color_code)
+         
+    # use plot function to draw a small line to name the legend.
+    plt.plot([], c=color_code, label=label)
+    plt.legend()
+ 
+ 
+# setting colors for each groups
+define_box_properties(vts_plot, '#D7191C', 'VTS')
+define_box_properties(nonvts_plot, '#2C7BB6', 'Non-VTS')
+ 
+# set the x label values
+plt.xticks(np.arange(0, len(ticks) * 2, 2), ticks)
+ 
+# set the limit for x axis
+plt.xlim(-2, len(ticks)*2)
+ 
+# set the limit for y axis
+plt.ylim(0, 0.8)
+ 
+# set the title
+plt.title('Duration(s) Comparisons for VTS vs Non-VTS Participants')
+plt.show()
+"""
