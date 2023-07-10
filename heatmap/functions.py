@@ -89,9 +89,9 @@ def normalize_heatmap_dict(pixel_heatmap):
         colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
         minval = pixel_heatmap[min(pixel_heatmap, key=pixel_heatmap.get)]
         maxval = min(pixel_heatmap[max(pixel_heatmap, key=pixel_heatmap.get)], 255)
-
         for key, val in pixel_heatmap.items():
             i_f = float(val - minval) / float(maxval - minval) * (len(colors) - 1)
+   
             ##### i_f = abs(255 - i_f)
             ##### pixel_heatmap[key] = (255, i_f, i_f)
 
@@ -99,7 +99,7 @@ def normalize_heatmap_dict(pixel_heatmap):
             if f < EPSILON:
                 pixel_heatmap[key] = colors[i]
             else:
-                (r1, g1, b1), (r2, g2, b2) = colors[i], colors[i + 1]
+                (r1, g1, b1), (r2, g2, b2) = colors[i%3], colors[(i + 1)%3]
                 pixel_heatmap[key] = (
                     int(r1 + f * (r2 - r1)),
                     int(g1 + f * (g2 - g1)),
