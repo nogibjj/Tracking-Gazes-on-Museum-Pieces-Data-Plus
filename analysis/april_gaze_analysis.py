@@ -183,6 +183,52 @@ gaze_saccades["participant_folder"] = gaze_saccades["participant_folder"].fillna
     method="ffill"
 )
 
+# Saccades per second
+saccade_time = gaze_saccades
+saccade_time["time elapsed(s)"] = saccade_time.groupby("participant_folder")[
+    "duration"
+].cumsum()
+saccade_time.dropna(subset="fixation id", inplace=True)
+
+m = saccade_time["fixation id"].isna()
+s = m.cumsum()
+N = 2
+saccade_time["new"] = s.map(s[~m].value_counts()).ge(N) & ~m
+saccade_time["new1"] = saccade_time["new"].shift(-1)
+
+mask = (saccade_time["new"] == True) & (saccade_time["new1"] == True)
+sac_change = saccade_time[mask]
+sac_change = sac_change.set_index(sac_change.index + 0.5)
+sac_change.loc[:] = np.nan
+saccade_time = pd.concat([saccade_time, sac_change], sort=False).drop(
+    ["new", "new1"], axis=1
+)
+saccade_time.sort_index(inplace=True)
+saccade_time = saccade_time.reset_index().drop("level_0", axis=1)
+saccade_time["participant_folder"] = saccade_time["participant_folder"].fillna(
+    method="ffill"
+)
+
+sac_per_time = saccade_time[
+    ["participant_folder", "fixation id", "time elapsed(s)"]
+].reset_index(drop=True)
+sac_per_time["fixation id"].fillna("saccade", inplace=True)
+sac_per_time["time elapsed(s)"].fillna(method="ffill", inplace=True)
+sac_per_time["fixation id"] = sac_per_time["fixation id"].astype(str)
+
+sac_per_sec = (
+    sac_per_time.groupby(
+        ["participant_folder", pd.Grouper(key="time elapsed(s)", freq="1S")]
+    )["fixation id"]
+    .apply(lambda x: x[x.str.contains("saccade")].count())
+    .to_frame()
+)
+sac_per_sec = sac_per_sec.rename({"fixation id": "saccade freq"}, axis=1).reset_index()
+sac_per_sec_mean = (
+    sac_per_sec.groupby("participant_folder")["saccade freq"].mean().to_frame()
+)
+sac_per_sec_mean.reset_index(inplace=True)
+
 # Organizing saccade calcuations
 gaze_saccades["saccade direction"] = gaze_saccades["saccade direction"].fillna(
     method="ffill"
