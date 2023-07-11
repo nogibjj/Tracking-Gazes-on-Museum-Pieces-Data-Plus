@@ -24,7 +24,7 @@ import sys
 
 sys.path.insert(0, "..")
 print(sys.path)
-all_gaze = pd.read_csv("../data/all_gaze.csv", compression="gzip")
+all_gaze = pd.read_csv("../data/all_gaze_original.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
 
@@ -92,11 +92,13 @@ fixation_count = gaze_copy.groupby("participant_folder")["fixation id"].sum().to
 no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
 null_participants = no_fixations.loc[:, "participant_folder"].to_list()
 gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
-
+gaze_fixed["time elapsed(s)"] = gaze_fixed.groupby("participant_folder")[
+    "duration"
+].cumsum()
 
 # Saccade dataframe
 fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
-id = gaze_fixed.groupby("fixation id")
+id = gaze_fixed.groupby(["participant_folder", "fixation id"])
 fixation = (
     pd.concat([id.head(1), id.tail(1)])
     .drop_duplicates()
@@ -105,7 +107,6 @@ fixation = (
 )
 gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
-gaze_saccades = gaze_saccades.drop("row_number", axis=1)
 
 # Saccade calculations
 saccade_calc = gaze_saccades[gaze_saccades["fixation id"].notnull()]
@@ -150,7 +151,7 @@ saccade_calc["saccade direction"] = np.select(conditions, choices, "none")
 saccade_calc = saccade_calc.reset_index(drop=True)
 saccade_calc = saccade_calc[
     [
-        "index",
+        "row_number",
         "saccade duration(s)",
         "change x",
         "change y",
@@ -160,8 +161,13 @@ saccade_calc = saccade_calc[
 ]
 
 gaze_saccades = pd.merge(
-    gaze_saccades, saccade_calc, left_on="index", right_on="index", how="left"
+    gaze_saccades, saccade_calc, left_on="row_number", right_on="row_number", how="left"
 )
+id2 = gaze_saccades.groupby(["participant_folder", "fixation id"])
+rearrange = gaze_saccades[gaze_saccades["fixation id"].isnull()]
+gaze_saccades = pd.concat([id2.tail(1)])
+gaze_saccades = pd.concat([rearrange, gaze_saccades])
+gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 
 # Insert empty row if saccade isn't recorded
 m = gaze_saccades["fixation id"].isna()
@@ -185,9 +191,6 @@ gaze_saccades["participant_folder"] = gaze_saccades["participant_folder"].fillna
 
 # Saccades per second
 saccade_time = gaze_saccades
-saccade_time["time elapsed(s)"] = saccade_time.groupby("participant_folder")[
-    "duration"
-].cumsum()
 saccade_time.dropna(subset="fixation id", inplace=True)
 
 m = saccade_time["fixation id"].isna()
@@ -229,22 +232,25 @@ sac_per_sec_mean = (
 )
 sac_per_sec_mean.reset_index(inplace=True)
 
-# Organizing saccade calcuations
-gaze_saccades["saccade direction"] = gaze_saccades["saccade direction"].fillna(
-    method="ffill"
+# Most common saccade direction
+direction_mode = (
+    gaze_saccades.groupby("participant_folder")["saccade direction"]
+    .agg(pd.Series.mode)
+    .to_frame()
 )
-gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade direction"] = np.nan
-gaze_saccades["saccade duration(s)"] = gaze_saccades["saccade duration(s)"].fillna(
-    method="ffill"
+direction_mode.reset_index(inplace=True)
+
+# Mean saccade distance
+sac_distance_mean = (
+    gaze_saccades.groupby("participant_folder")["saccade distance"].mean().to_frame()
 )
-gaze_saccades.loc[
-    gaze_saccades["fixation id"].notnull(), "saccade duration(s)"
-] = np.nan
-gaze_saccades["saccade distance"] = gaze_saccades["saccade distance"].fillna(
-    method="ffill"
+sac_distance_mean.reset_index(inplace=True)
+
+# Mean saccade duration
+sac_dur_mean = (
+    gaze_saccades.groupby("participant_folder")["saccade duration(s)"].mean().to_frame()
 )
-gaze_saccades.loc[gaze_saccades["fixation id"].notnull(), "saccade distance"] = np.nan
-gaze_saccades = gaze_saccades.drop(["duration", "gaze duration(s)"], axis=1)
+sac_dur_mean.reset_index(inplace=True)
 
 
 # Fixation dataframe
@@ -269,23 +275,16 @@ gaze_fixation = pd.merge(
     how="left",
 )
 
-fix_mean = gaze_fixation.groupby("participant_folder")["fixation duration(s)"].mean()
+fix_mean = fix_durations.groupby(["participant_folder"])["fixation duration(s)"].mean()
 fix_mean = fix_mean.to_frame()
 fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
 
 overall_mean = fix_mean["mean fix duration(s)"].mean()
 
-# Cumulative analysis dataframe
-fix_analysis = fix_mean.reset_index()
-
-
 # Fixations per second for each participant
 fix_per_time = gaze_fixed[
-    ["participant_folder", "fixation id", "duration"]
+    ["participant_folder", "fixation id", "time elapsed(s)"]
 ].reset_index(drop=True)
-fix_per_time["time elapsed(s)"] = fix_per_time.groupby("participant_folder")[
-    "duration"
-].cumsum()
 
 fix_per_sec = (
     fix_per_time.groupby(
@@ -300,23 +299,18 @@ fix_per_sec_mean = (
 )
 fix_per_sec_mean.reset_index(inplace=True)
 
-# Add fixations per second to analysis dataframe
-fix_analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
-
-
-# Figuring out the participants who don't have a fixation id
-gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
-gaze_null.drop("row_number", axis=1, inplace=True)
-
-qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
-qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
-qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
-qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
-qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
-qualify["angle(r)"] = qualify.apply(
-    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+# Most fixated on feature
+most_fix_gen = (
+    gaze_fixation.groupby("participant_folder")["general tag"]
+    .agg(pd.Series.mode)
+    .to_frame()
 )
+most_fix_gen.reset_index(inplace=True)
 
+most_fix_tag = (
+    gaze_fixation.groupby("participant_folder")["tag"].agg(pd.Series.mode).to_frame()
+)
+most_fix_tag.reset_index(inplace=True)
 
 # Fixation time per feature
 tag_fix = (
@@ -335,22 +329,54 @@ gen_tag_fix = (
 gen_tag_fix.reset_index(inplace=True)
 gen_tag_fix_avg = gen_tag_fix.groupby("general tag")["gaze duration(s)"].mean()
 
-
 # First and last things participants fixated on and for how long
 g = gaze_fixation.groupby("participant_folder")
 
-first_last = pd.concat([g.head(1), g.tail(1)]).sort_values("participant_folder")
-first_last = first_last[
-    ["participant_folder", "general tag", "tag", "fixation duration(s)"]
-]
+first = pd.concat([g.head(1)]).sort_values("participant_folder")
+first = first[["participant_folder", "general tag", "tag", "fixation duration(s)"]]
+first.reset_index(inplace=True)
+
+last = pd.concat([g.tail(1)]).sort_values("participant_folder")
+last = last[["participant_folder", "general tag", "tag", "fixation duration(s)"]]
+last.reset_index(inplace=True)
+
+# Putting together cumulative analysis dataframe
+analysis = fix_mean.reset_index()
+analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+analysis["most fixated gen"] = most_fix_gen["general tag"]
+analysis["most fixated tag"] = most_fix_tag["tag"]
+analysis["first fixation"] = first["tag"]
+analysis["first fix time"] = first["fixation duration(s)"]
+analysis["last fixation"] = last["tag"]
+analysis["last fix time"] = last["fixation duration(s)"]
+analysis["mean sac duration(s)"] = sac_dur_mean["saccade duration(s)"]
+analysis["mean sac distance"] = sac_distance_mean["saccade distance"]
+analysis["mode sac direction"] = direction_mode["saccade direction"]
+analysis["saccade freq"] = sac_per_sec_mean["saccade freq"]
 
 # First time participants fixated on each feature
-gaze_fixation["time elapsed"] = gaze_fixation.groupby("participant_folder")[
-    "duration"
-].cumsum()
+genid = gaze_fixation.groupby(["participant_folder", "general tag"])
+first_gen = pd.concat([genid.first()])
+first_gen.reset_index(inplace=True)
+first_gen = first_gen[["participant_folder", "general tag", "time elapsed(s)"]]
 
-first_gen = gaze_fixation[gaze_fixation["index"].isin(out_gen)]
-first_gen = first_gen[["participant_folder", "general tag", "time elapsed"]]
+tagid = gaze_fixation.groupby(["participant_folder", "tag"])
+first_tag = pd.concat([tagid.first()])
+first_tag.reset_index(inplace=True)
+first_tag = first_tag[["participant_folder", "tag", "time elapsed(s)"]]
+
+# Figuring out the participants who don't have a fixation id
+gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+gaze_null.drop("row_number", axis=1, inplace=True)
+
+qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
+qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+qualify["angle(r)"] = qualify.apply(
+    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+)
 
 
 # Demographics

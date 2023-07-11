@@ -25,7 +25,7 @@ import sys
 
 sys.path.insert(0, "..")
 print(sys.path)
-all_gaze = pd.read_csv("../data/all_gaze.csv", compression="gzip")
+all_gaze = pd.read_csv("../data/all_gaze_Vulci.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
 gaze_copy = all_gaze
