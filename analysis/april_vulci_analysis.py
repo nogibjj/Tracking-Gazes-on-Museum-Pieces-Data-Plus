@@ -237,7 +237,7 @@ gaze_fixation = pd.merge(
     how="left",
 )
 
-fix_mean = gaze_fixation.groupby("participant_folder")["fixation duration(s)"].mean()
+fix_mean = fix_durations.groupby("participant_folder")["fixation duration(s)"].mean()
 fix_mean = fix_mean.to_frame()
 fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
 
