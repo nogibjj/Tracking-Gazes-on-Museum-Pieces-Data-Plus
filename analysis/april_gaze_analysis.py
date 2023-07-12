@@ -5,6 +5,8 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import collections
+from collections import Counter
 
 
 # Groupby function
@@ -340,6 +342,33 @@ last = pd.concat([g.tail(1)]).sort_values("participant_folder")
 last = last[["participant_folder", "general tag", "tag", "fixation duration(s)"]]
 last.reset_index(inplace=True)
 
+
+# Most common sequence
+def most_common(words, n):
+    last_group = len(words) - (n - 1)
+
+    groups = (tuple(words[start : start + n]) for start in range(last_group))
+
+    return Counter(groups).most_common()
+
+
+uniqueid = gaze_fixation.groupby(["participant_folder", "fixation id"])
+unique_fix = pd.concat([uniqueid.first()]).reset_index()
+unique_fix = unique_fix[["participant_folder", "tag"]]
+
+participants = dict()
+for k, v in unique_fix.groupby("participant_folder")["tag"]:
+    participants[k] = v
+
+for k, v in participants.items():
+    participants[k] = most_common(v, 3)
+
+for k, v in participants.items():
+    participants[k] = v[0]
+
+common_seq = pd.DataFrame.from_dict(participants).transpose().reset_index()
+common_seq.columns = ["participant_folder", "sequence", "count"]
+
 # Putting together cumulative analysis dataframe
 analysis = fix_mean.reset_index()
 analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
@@ -353,6 +382,8 @@ analysis["mean sac duration(s)"] = sac_dur_mean["saccade duration(s)"]
 analysis["mean sac distance"] = sac_distance_mean["saccade distance"]
 analysis["mode sac direction"] = direction_mode["saccade direction"]
 analysis["saccade freq"] = sac_per_sec_mean["saccade freq"]
+analysis["most common sequence"] = common_seq["sequence"]
+analysis["sequence count"] = common_seq["count"]
 
 # First time participants fixated on each feature
 genid = gaze_fixation.groupby(["participant_folder", "general tag"])
