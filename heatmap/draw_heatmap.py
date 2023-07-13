@@ -33,6 +33,7 @@ from functions import (
     resample_gaze,
     save_outputs,
     reference_image_finder,
+    reference_gaze_point_mapper,
 )
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
 from config import *
@@ -74,7 +75,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-    first_frame = reference_image_finder(video_file)
+    first_frame = reference_image_finder(video_file, rush=True)
     print(
         f"""Found the reference image for the video {video_file}
           from the folder {folder}"""
@@ -99,17 +100,30 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         #     first_frame = curr_frame
 
         if frame_exists:
-            gaze_object_crop, closest_row = get_closest_individual_gaze_object(
+            curr_frame = cv2.cvtColor(curr_frame, cv2.COLOR_BGR2GRAY)
+            cv2.imwrite("f{frame_no}.jpg", curr_frame)
+            comparison_frame = cv2.imread("f{frame_no}.jpg", cv2.IMREAD_GRAYSCALE)
+            (
+                gaze_object_crop,
+                closest_row,
+                x_pixel,
+                y_pixel,
+            ) = get_closest_individual_gaze_object(
                 cap, curr_frame, gaze_df, env_var.DETECT_BOUNDING_SIZE
             )
 
             if not gaze_object_crop.any() or closest_row.empty:
                 continue
 
-            ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
+            # ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
+            print("Starting SIFT")
+            ref_center = reference_gaze_point_mapper(
+                first_frame, comparison_frame, (x_pixel, y_pixel)
+            )
+            print(f"Done SIFT for {frame_no}")
             if ref_center == None:
                 continue
-
+            sys.exit()
             closest_row["ref_center_x"] = ref_center[0]
             closest_row["ref_center_y"] = ref_center[1]
             updated_gaze = pd.concat([updated_gaze, closest_row])
