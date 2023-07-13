@@ -49,6 +49,9 @@ create_directory(env_var.TEMP_OUTPUT_DIR)
 
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
+    if not os.path.isdir(folder):
+        continue
+
     print("#" * 50)
     print(f"Running for folder {index} -- {folder}")
     pixel_heatmap = defaultdict(int)
@@ -59,7 +62,6 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
 
     csv_file = os.path.join(folder, "gaze.csv")
     video_file = os.path.join(folder, "*.mp4")
-    print(video_file)
     video_file = glob.glob(video_file)[0]
 
     gaze_df = pd.read_csv(csv_file)
