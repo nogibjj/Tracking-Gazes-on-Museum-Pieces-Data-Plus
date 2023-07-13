@@ -355,7 +355,7 @@ def most_common(words, n):
 uniqueid = gaze_fixation.groupby(["participant_folder", "fixation id"])
 unique_fix = pd.concat([uniqueid.first()]).reset_index()
 mode_fix = uniqueid["tag"].agg(pd.Series.mode).to_frame().reset_index()
-unique_fix["tag"] = mode_fix["tag"]
+unique_fix["tag"] = mode_fix["tag"].astype(str)
 unique_fix = unique_fix[["participant_folder", "tag"]]
 
 participants = dict()
