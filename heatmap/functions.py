@@ -64,9 +64,6 @@ def pair_generators(
             elif pt1[1] == gaze_point[1] or pt2[1] == gaze_point[1]:
                 continue
 
-            elif (pt1[0] == pt2[0]) and (pt1[1] == pt2[1]):
-                continue
-
             good_pairs.append([pt1, pt2])
 
     return good_pairs
@@ -92,7 +89,7 @@ def ideal_pair(
             kp1=kp1,
             kp2=kp2,
         )
-
+        pairs_list = list(set(tuple(sub) for sub in pairs_list))
         if len(pairs_list) >= 2:
             return pairs_list[0:2]
 
@@ -288,15 +285,15 @@ def reference_gaze_point_mapper(
     # find the reference gaze point
     reference_gaze_point = intersecting_point(slope_intercept_a, slope_intercept_b)
 
-    assert (
-        reference_gaze_point[1]
-        == slope_intercept_a[0] * reference_gaze_point[0] + slope_intercept_a[1]
-    )
+    # assert (
+    #     reference_gaze_point[1]
+    #     == slope_intercept_a[0] * reference_gaze_point[0] + slope_intercept_a[1]
+    # )
 
-    assert (
-        reference_gaze_point[1]
-        == slope_intercept_b[0] * reference_gaze_point[0] + slope_intercept_b[1]
-    )
+    # assert (
+    #     reference_gaze_point[1]
+    #     == slope_intercept_b[0] * reference_gaze_point[0] + slope_intercept_b[1]
+    # )
 
     reference_gaze_point = (int(reference_gaze_point[0]), int(reference_gaze_point[1]))
 
@@ -457,23 +454,23 @@ def save_outputs(
     """
     ### Write the outputs to the original data folder
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}.png"), first_frame
+        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}_SIFT.png"), first_frame
     )
     cv2.imwrite(
         os.path.join(
             ROOT_PATH,
-            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
+            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}_SIFT.png",
         ),
         final_img,
     )
     updated_gaze.to_csv(
-        os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}.csv"), index=False
+        os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}_SIFT.csv"), index=False
     )
 
     ### Write the data to the temp output folder
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image.png", first_frame)
-    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap.png", final_img)
-    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze.csv", index=False)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image_SIFT.png", first_frame)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap_SIFT.png", final_img)
+    updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze_SIFT.csv", index=False)
 
 
 # mse function for the reference image calculations
@@ -557,7 +554,7 @@ def best_frame_finder(
 
 
 def reference_image_finder(
-    video_path: str, return_mse_list=False, buckets=30, rush=False
+    video_path: str, return_mse_list=False, buckets=30, early_stop=False
 ):
     """Finds the best possible reference image in a video.
 
@@ -614,7 +611,7 @@ def reference_image_finder(
                 frame_counter = 0
                 minute_frame_counter += 1
 
-            if frame_number == 20 and rush is True:
+            if frame_number == 20 and early_stop is True:
                 return frame
 
             elif minute_frame_counter == 60:

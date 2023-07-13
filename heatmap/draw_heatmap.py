@@ -75,7 +75,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-    first_frame = reference_image_finder(video_file, rush=True)
+    first_frame = reference_image_finder(video_file, early_stop=False)
     print(
         f"""Found the reference image for the video {video_file}
           from the folder {folder}"""
@@ -100,9 +100,6 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         #     first_frame = curr_frame
 
         if frame_exists:
-            curr_frame = cv2.cvtColor(curr_frame, cv2.COLOR_BGR2GRAY)
-            cv2.imwrite("f{frame_no}.jpg", curr_frame)
-            comparison_frame = cv2.imread("f{frame_no}.jpg", cv2.IMREAD_GRAYSCALE)
             (
                 gaze_object_crop,
                 closest_row,
@@ -118,12 +115,13 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
             # ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
             print("Starting SIFT")
             ref_center = reference_gaze_point_mapper(
-                first_frame, comparison_frame, (x_pixel, y_pixel)
+                first_frame, curr_frame, (x_pixel, y_pixel)
             )
             print(f"Done SIFT for {frame_no}")
+
             if ref_center == None:
                 continue
-            sys.exit()
+
             closest_row["ref_center_x"] = ref_center[0]
             closest_row["ref_center_y"] = ref_center[1]
             updated_gaze = pd.concat([updated_gaze, closest_row])
