@@ -8,6 +8,49 @@ import traceback
 import cv2
 import pandas as pd
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
+def is_single_color(
+    cv2_array, save=False, name="empty", troubleshoot=False, robust=False
+):
+    """Verify if frame has pixel values of one color."""
+
+    # Load the image
+    # Some weird artifacting happens with blue pictures.
+    # They change to orange.
+    image = np.array(cv2_array, np.uint8)
+
+    # image = Image.load(image)
+    image = Image.fromarray(image, mode="RGB")
+
+    # Convert the image to grayscale
+    image = image.convert("L")
+
+    # Get the pixel data
+
+    pixels = list(image.getdata())
+
+    # Check if all pixel values are the same
+    is_single_color = all(pixel == pixels[0] for pixel in pixels)
+
+    if troubleshoot:
+        return pixels
+    if save:
+        image.save(f"{name}.png")
+
+    if is_single_color:
+        # print("The image is only of one color.")
+        return True
+    elif robust:
+        # print("The image is mostly one color.")
+        most_common_color = max(set(pixels), key=pixels.count)
+        if pixels.count(most_common_color) > len(pixels) * 0.9:
+            return True
+    else:
+        # print("The image contains multiple colors.")
+        return False
 
 
 # abstracting important pieces to other functions
@@ -28,7 +71,9 @@ def image_matcher(reference_frame, comparison_frame):
 
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(reference_frame, None)
+    print("kp1 length : ", len(kp1))
     kp2, des2 = sift.detectAndCompute(comparison_frame, None)
+    print("kp2 length : ", len(kp2))
 
     # BFMatcher with default params
     bf = cv2.BFMatcher()
@@ -589,6 +634,9 @@ def reference_image_finder(
         success, frame = cap.read()
 
         if success:
+            if is_single_color(frame):
+                print("Frame is of one color. Skipping...")
+                continue
             frame_number += 1
             frame_counter += 1
             temp_frame_dictionary_original[frame_number] = frame.copy()
@@ -643,8 +691,17 @@ def reference_image_finder(
             # frame_dictionary_gray or original has frames
 
             try:
+                final_list = list(temp_frame_dictionary_gray.keys())
+                for key in final_list:
+                    if is_single_color(temp_frame_dictionary_gray[key], robust=True):
+                        final_list.pop(final_list.index(key))
+
+                # final_bucket_frame, final_bucket_frame_num = best_frame_finder(
+                #     temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
+                # )
+
                 final_bucket_frame, final_bucket_frame_num = best_frame_finder(
-                    temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
+                    temp_frame_dictionary_gray, final_list
                 )
 
                 frame_dictionary_gray[
@@ -724,7 +781,7 @@ def reference_image_finder(
 
     # finding the final best frame to become the reference frame
 
-    _, reference_frame_num = best_frame_finder(
+    reference_frame_gray, reference_frame_num = best_frame_finder(
         final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
     )
 
@@ -732,7 +789,7 @@ def reference_image_finder(
 
     print(f"Obtained best frame for video : {reference_frame_num}")
 
-    return reference_frame_original
+    return reference_frame_original, reference_frame_gray
 
 
 # def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):

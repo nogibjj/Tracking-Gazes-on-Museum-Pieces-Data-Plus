@@ -34,7 +34,10 @@ from functions import (
     save_outputs,
     reference_image_finder,
     reference_gaze_point_mapper,
+    is_single_color,
 )
+import matplotlib.pyplot as plt
+import gc
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
 from config import *
 
@@ -75,11 +78,16 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-    first_frame = reference_image_finder(video_file, early_stop=False)
+    first_frame, gray_first_frame = reference_image_finder(video_file, early_stop=False)
     print(
         f"""Found the reference image for the video {video_file}
           from the folder {folder}"""
     )
+    # cv2.imshow("", first_frame)
+    # key2 = cv2.waitKey(0)
+    # if key2 == ord("q"):
+    #     break
+
     cap = cv2.VideoCapture(video_file)
 
     while cap.isOpened():
@@ -100,6 +108,24 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         #     first_frame = curr_frame
 
         if frame_exists:
+            print(f"Processing frame {frame_no}")
+
+            # if frame_no == 1963:
+            #     print("Found the frame")
+            #     cv2.imshow("", curr_frame)
+            #     key2 = cv2.waitKey(0)
+            #     if key2 == ord("q"):
+            #         break
+            #     plt.imshow(curr_frame)
+            #     plt.savefig("breaker1.png")
+            #     plt.show()
+            #     print("Result of is_single_color")
+            #     print(is_single_color(curr_frame, True))
+
+            if is_single_color(curr_frame):
+                # plt.imshow(curr_frame)
+                # plt.show()
+                continue
             (
                 gaze_object_crop,
                 closest_row,
@@ -114,10 +140,23 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
 
             # ref_center = get_closest_reference_pixel(first_frame, gaze_object_crop)
             print("Starting SIFT")
-            ref_center = reference_gaze_point_mapper(
-                first_frame, curr_frame, (x_pixel, y_pixel)
-            )
-            print(f"Done SIFT for {frame_no}")
+            gray_curr_frame = cv2.cvtColor(curr_frame.copy(), cv2.COLOR_BGR2GRAY)
+            gc.collect()
+            try:
+                ref_center = reference_gaze_point_mapper(
+                    gray_first_frame, gray_curr_frame, (x_pixel, y_pixel)
+                )
+                print(f"Done SIFT for {frame_no}")
+            except:
+                print(f"Failed SIFT for {frame_no}")
+                # save error image
+                is_single_color(
+                    curr_frame,
+                    save=True,
+                    name=f"error_{frame_no}_{folder.split(os.sep)[-1]}.png",
+                )
+
+                continue
 
             if ref_center == None:
                 continue
