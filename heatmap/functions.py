@@ -734,7 +734,8 @@ def reference_image_finder(
                 print("Minute frame counter is less than 60")
                 # the if statement for 60 seconds never triggered
                 # so the frame dictionary may easily have 59 or less final frames.
-                for key in frame_dictionary_original.keys():
+                frame_dn_original_keys = list(frame_dictionary_original.keys())
+                for key in frame_dn_original_keys:
                     if is_single_color(frame_dictionary_original[key], robust=True):
                         frame_dictionary_original.pop(key)
                         frame_dictionary_gray.pop(key)
