@@ -5,7 +5,7 @@ import sys
 import os
 import glob
 import traceback
-cd 
+
 # prepend parent directory to the system path:
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)

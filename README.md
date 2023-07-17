@@ -9,4 +9,4 @@ This is a data plus project where we track the gazes of participants who were lo
 4. Remove one tagging tool directory
 5. Check if extra viz required for scan paths. 
 6. Run full thing on new data
-7. 
+7. Remove grey filters. 

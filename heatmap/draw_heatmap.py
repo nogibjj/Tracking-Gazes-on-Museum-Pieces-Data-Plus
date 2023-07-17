@@ -75,7 +75,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-    first_frame = reference_image_finder(video_file, early_stop=False)
+    first_frame = reference_image_finder(video_file, early_stop=True)
     print(
         f"""Found the reference image for the video {video_file}
           from the folder {folder}"""
@@ -89,8 +89,8 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         frame_no += 1
         frame_exists, curr_frame = cap.read()
 
-        # if frame_no < env_var.SKIP_FIRST_N_FRAMES:
-        #     continue
+        if frame_no < env_var.SKIP_FIRST_N_FRAMES:
+            continue
 
         ##### Uncomment below if early stopping is required
         # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:

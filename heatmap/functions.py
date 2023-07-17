@@ -30,6 +30,14 @@ def image_matcher(reference_frame, comparison_frame):
     kp1, des1 = sift.detectAndCompute(reference_frame, None)
     kp2, des2 = sift.detectAndCompute(comparison_frame, None)
 
+    if kp1 == ():
+        print('Reference Frame has no features to detect')
+        return [], (), ()
+
+    if kp2 == ():
+        print('Comparision frame has no features to detect')
+        return [], (), ()
+    
     # BFMatcher with default params
     bf = cv2.BFMatcher()
     matches = bf.knnMatch(des1, des2, k=2)
@@ -114,7 +122,9 @@ def keypoints_finder(
     matches, kp1, kp2 = image_matcher(
         reference_frame=reference_frame, comparison_frame=comparison_frame
     )
-
+    if matches == []:
+        return None
+    
     pairs_list = ideal_pair(
         dist_ranges=dist_ranges,
         gaze_point=gaze_point,
@@ -611,7 +621,7 @@ def reference_image_finder(
                 frame_counter = 0
                 minute_frame_counter += 1
 
-            if frame_number == 20 and early_stop is True:
+            if frame_number == 150 and early_stop is True:
                 return frame
 
             elif minute_frame_counter == 60:
