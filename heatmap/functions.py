@@ -8,6 +8,49 @@ import traceback
 import cv2
 import pandas as pd
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
+def is_single_color(
+    cv2_array, save=False, name="empty", troubleshoot=False, robust=False
+):
+    """Verify if frame has pixel values of one color."""
+
+    # Load the image
+    # Some weird artifacting happens with blue pictures.
+    # They change to orange.
+    image = np.array(cv2_array, np.uint8)
+
+    # image = Image.load(image)
+    image = Image.fromarray(image, mode="RGB")
+
+    # Convert the image to grayscale
+    image = image.convert("L")
+
+    # Get the pixel data
+
+    pixels = list(image.getdata())
+
+    # Check if all pixel values are the same
+    is_single_color = all(pixel == pixels[0] for pixel in pixels)
+
+    if troubleshoot:
+        return pixels
+    if save:
+        image.save(f"{name}.png")
+
+    if is_single_color:
+        # print("The image is only of one color.")
+        return True
+    elif robust:
+        # print("The image is mostly one color.")
+        most_common_color = max(set(pixels), key=pixels.count)
+        if pixels.count(most_common_color) > len(pixels) * 0.9:
+            return True
+    else:
+        # print("The image contains multiple colors.")
+        return False
 
 
 # abstracting important pieces to other functions
@@ -28,7 +71,9 @@ def image_matcher(reference_frame, comparison_frame):
 
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(reference_frame, None)
+    print("kp1 length : ", len(kp1))
     kp2, des2 = sift.detectAndCompute(comparison_frame, None)
+    print("kp2 length : ", len(kp2))
 
     if kp1 == ():
         print('Reference Frame has no features to detect')
@@ -595,10 +640,14 @@ def reference_image_finder(
     frame_number = 0
     frame_counter = 0
     minute_frame_counter = 0
+    less_than_one_minute = True
     while cap.isOpened():
         success, frame = cap.read()
 
         if success:
+            if is_single_color(frame):
+                print("Frame is of one color. Skipping...")
+                continue
             frame_number += 1
             frame_counter += 1
             temp_frame_dictionary_original[frame_number] = frame.copy()
@@ -625,8 +674,20 @@ def reference_image_finder(
                 return frame
 
             elif minute_frame_counter == 60:
+                print("Minute frame counter reached 60, now cleaning keys...")
+                gray_keys_clean = list(frame_dictionary_gray.keys())
+                for key in gray_keys_clean:
+                    if is_single_color(frame_dictionary_original[key], robust=True):
+                        gray_keys_clean.pop(gray_keys_clean.index(key))
+                        print(f"Removed key {key} from the gray keys list")
+                    else:
+                        print(f"Key {key} is not single colored")
+                print("Done cleaning single colored keys...")
+                print(
+                    "The length of the gray keys list is now : ", len(gray_keys_clean)
+                )
                 best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-                    frame_dictionary_gray, list(frame_dictionary_gray.keys())
+                    frame_dictionary_gray, gray_keys_clean
                 )
                 print(f"Best frame for bucket 60 : {best_bucket_frame_num}")
                 final_frame_dictionary_gray[
@@ -638,6 +699,7 @@ def reference_image_finder(
                 frame_dictionary_gray = dict()
                 frame_dictionary_original = dict()
                 minute_frame_counter = 0
+                less_than_one_minute = False
 
         else:
             if (
@@ -653,9 +715,18 @@ def reference_image_finder(
             # frame_dictionary_gray or original has frames
 
             try:
+                # final_list = list(temp_frame_dictionary_gray.keys())
+                # for key in final_list:
+                #     if is_single_color(temp_frame_dictionary_gray[key], robust=True):
+                #         final_list.pop(final_list.index(key))
+
                 final_bucket_frame, final_bucket_frame_num = best_frame_finder(
                     temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
                 )
+
+                # final_bucket_frame, final_bucket_frame_num = best_frame_finder(
+                #     temp_frame_dictionary_gray, final_list
+                # )
 
                 frame_dictionary_gray[
                     final_bucket_frame_num
@@ -669,23 +740,54 @@ def reference_image_finder(
             except:
                 print("Excess frames not present in temp frame dictionaries")
 
-            best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-                frame_dictionary_gray, list(frame_dictionary_gray.keys())
-            )
+            if less_than_one_minute:
+                print("Minute frame counter is less than 60")
+                # the if statement for 60 seconds never triggered
+                # so the frame dictionary may easily have 59 or less final frames.
+                frame_dn_original_keys = list(frame_dictionary_original.keys())
+                for key in frame_dn_original_keys:
+                    if is_single_color(frame_dictionary_original[key], robust=True):
+                        frame_dictionary_original.pop(key)
+                        frame_dictionary_gray.pop(key)
+                        print(f"Removed key {key} from the less than minute keys")
+                    else:
+                        print(f"Key {key} is not single colored")
+                final_frame_dictionary_gray = frame_dictionary_gray.copy()
+                final_frame_dictionary_original = frame_dictionary_original.copy()
+                break
 
-            final_frame_dictionary_gray[
-                best_bucket_frame_num
-            ] = best_bucket_frame.copy()
-            final_frame_dictionary_original[
-                best_bucket_frame_num
-            ] = frame_dictionary_original[best_bucket_frame_num].copy()
+            try:
+                # Assuming some good frames remain in frame dictionaries
+                best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+                    frame_dictionary_gray, list(frame_dictionary_gray.keys())
+                )
+                print(
+                    "This is the length of the keys for frame dns : ",
+                    len(list(frame_dictionary_gray.keys())),
+                )
 
-            # if video is not a minute long
+                final_frame_dictionary_gray[
+                    best_bucket_frame_num
+                ] = best_bucket_frame.copy()
+                final_frame_dictionary_original[
+                    best_bucket_frame_num
+                ] = frame_dictionary_original[best_bucket_frame_num].copy()
+                print(
+                    len(final_frame_dictionary_gray.keys()),
+                    "is the amount of keys in final frame for this video",
+                )
+                # if video is not a minute long
 
-            print("Done storing the video frames for MSE")
-            print(
-                f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
-            )
+                print("Done storing the video frames for MSE")
+                print(
+                    f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+                )
+            except:
+                print("No good frames remain in frame dictionaries")
+                print("Done storing the video frames for MSE")
+                print(
+                    f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+                )
             break
 
     cv2.destroyAllWindows()
@@ -733,16 +835,25 @@ def reference_image_finder(
     #     best_frames_per_minute[best_bucket_frame_num] = best_bucket_frame.copy()
 
     # finding the final best frame to become the reference frame
-
-    _, reference_frame_num = best_frame_finder(
-        final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
+    final_list = list(final_frame_dictionary_gray.keys())
+    for key in final_list:
+        if is_single_color(final_frame_dictionary_original[key], robust=True):
+            final_list.pop(final_list.index(key))
+            print(f"Removed key {key} from the final list")
+        else:
+            print(f"Final list Key {key} is not single colored")
+    # reference_frame_gray, reference_frame_num = best_frame_finder(
+    #     final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
+    # )
+    reference_frame_gray, reference_frame_num = best_frame_finder(
+        final_frame_dictionary_gray, final_list
     )
 
     reference_frame_original = final_frame_dictionary_original[reference_frame_num]
 
     print(f"Obtained best frame for video : {reference_frame_num}")
 
-    return reference_frame_original
+    return reference_frame_original, reference_frame_gray
 
 
 # def reference_image_finder(video_path: str, return_mse_list=False, buckets=30):
