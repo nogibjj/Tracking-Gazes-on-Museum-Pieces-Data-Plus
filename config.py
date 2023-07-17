@@ -7,6 +7,7 @@ class base_class:
     DETECT_BOUNDING_SIZE = 50  # Size of the bounding box for detecition
     DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
     RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
+    REFERENCE_IMAGE = True
 
     # PLACE THE NAME OF YOUR ART PIECE AFTER THE ART PIECE VARIABLE
     # IF THERE IS MORE THAN ONE ART PIECE OR OBJECT OF INTEREST IN THE VIDEO

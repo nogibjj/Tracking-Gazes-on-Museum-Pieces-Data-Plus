@@ -78,11 +78,18 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-    first_frame, gray_first_frame = reference_image_finder(video_file, early_stop=False)
-    print(
-        f"""Found the reference image for the video {video_file}
-          from the folder {folder}"""
-    )
+
+    if env_var.REFERENCE_IMAGE:
+        first_frame = cv2.imread(os.path.join(env_var.ROOT_PATH, 'reference_image.png'))
+        gray_first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
+        print("Found existing reference image.")
+
+    else:
+        first_frame, gray_first_frame = reference_image_finder(video_file, early_stop=False)
+        print(
+            f"""Found the reference image for the video {video_file}
+            from the folder {folder}"""
+        )
     # cv2.imshow("", first_frame)
     # key2 = cv2.waitKey(0)
     # if key2 == ord("q"):
