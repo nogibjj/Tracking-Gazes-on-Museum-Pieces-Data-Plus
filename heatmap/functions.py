@@ -630,6 +630,7 @@ def reference_image_finder(
     frame_number = 0
     frame_counter = 0
     minute_frame_counter = 0
+    less_than_one_minute = True
     while cap.isOpened():
         success, frame = cap.read()
 
@@ -663,8 +664,20 @@ def reference_image_finder(
                 return frame
 
             elif minute_frame_counter == 60:
+                print("Minute frame counter reached 60, now cleaning keys...")
+                gray_keys_clean = list(frame_dictionary_gray.keys())
+                for key in gray_keys_clean:
+                    if is_single_color(frame_dictionary_original[key], robust=True):
+                        gray_keys_clean.pop(gray_keys_clean.index(key))
+                        print(f"Removed key {key} from the gray keys list")
+                    else:
+                        print(f"Key {key} is not single colored")
+                print("Done cleaning single colored keys...")
+                print(
+                    "The length of the gray keys list is now : ", len(gray_keys_clean)
+                )
                 best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-                    frame_dictionary_gray, list(frame_dictionary_gray.keys())
+                    frame_dictionary_gray, gray_keys_clean
                 )
                 print(f"Best frame for bucket 60 : {best_bucket_frame_num}")
                 final_frame_dictionary_gray[
@@ -676,6 +689,7 @@ def reference_image_finder(
                 frame_dictionary_gray = dict()
                 frame_dictionary_original = dict()
                 minute_frame_counter = 0
+                less_than_one_minute = False
 
         else:
             if (
@@ -691,18 +705,18 @@ def reference_image_finder(
             # frame_dictionary_gray or original has frames
 
             try:
-                final_list = list(temp_frame_dictionary_gray.keys())
-                for key in final_list:
-                    if is_single_color(temp_frame_dictionary_gray[key], robust=True):
-                        final_list.pop(final_list.index(key))
-
-                # final_bucket_frame, final_bucket_frame_num = best_frame_finder(
-                #     temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
-                # )
+                # final_list = list(temp_frame_dictionary_gray.keys())
+                # for key in final_list:
+                #     if is_single_color(temp_frame_dictionary_gray[key], robust=True):
+                #         final_list.pop(final_list.index(key))
 
                 final_bucket_frame, final_bucket_frame_num = best_frame_finder(
-                    temp_frame_dictionary_gray, final_list
+                    temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
                 )
+
+                # final_bucket_frame, final_bucket_frame_num = best_frame_finder(
+                #     temp_frame_dictionary_gray, final_list
+                # )
 
                 frame_dictionary_gray[
                     final_bucket_frame_num
@@ -716,23 +730,53 @@ def reference_image_finder(
             except:
                 print("Excess frames not present in temp frame dictionaries")
 
-            best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-                frame_dictionary_gray, list(frame_dictionary_gray.keys())
-            )
+            if less_than_one_minute:
+                print("Minute frame counter is less than 60")
+                # the if statement for 60 seconds never triggered
+                # so the frame dictionary may easily have 59 or less final frames.
+                for key in frame_dictionary_original.keys():
+                    if is_single_color(frame_dictionary_original[key], robust=True):
+                        frame_dictionary_original.pop(key)
+                        frame_dictionary_gray.pop(key)
+                        print(f"Removed key {key} from the less than minute keys")
+                    else:
+                        print(f"Key {key} is not single colored")
+                final_frame_dictionary_gray = frame_dictionary_gray.copy()
+                final_frame_dictionary_original = frame_dictionary_original.copy()
+                break
 
-            final_frame_dictionary_gray[
-                best_bucket_frame_num
-            ] = best_bucket_frame.copy()
-            final_frame_dictionary_original[
-                best_bucket_frame_num
-            ] = frame_dictionary_original[best_bucket_frame_num].copy()
+            try:
+                # Assuming some good frames remain in frame dictionaries
+                best_bucket_frame, best_bucket_frame_num = best_frame_finder(
+                    frame_dictionary_gray, list(frame_dictionary_gray.keys())
+                )
+                print(
+                    "This is the length of the keys for frame dns : ",
+                    len(list(frame_dictionary_gray.keys())),
+                )
 
-            # if video is not a minute long
+                final_frame_dictionary_gray[
+                    best_bucket_frame_num
+                ] = best_bucket_frame.copy()
+                final_frame_dictionary_original[
+                    best_bucket_frame_num
+                ] = frame_dictionary_original[best_bucket_frame_num].copy()
+                print(
+                    len(final_frame_dictionary_gray.keys()),
+                    "is the amount of keys in final frame for this video",
+                )
+                # if video is not a minute long
 
-            print("Done storing the video frames for MSE")
-            print(
-                f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
-            )
+                print("Done storing the video frames for MSE")
+                print(
+                    f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+                )
+            except:
+                print("No good frames remain in frame dictionaries")
+                print("Done storing the video frames for MSE")
+                print(
+                    f"Last frame number for {video_path.split(os.sep)[-1]} : {frame_number}"
+                )
             break
 
     cv2.destroyAllWindows()
