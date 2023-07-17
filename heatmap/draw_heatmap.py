@@ -88,7 +88,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     # if key2 == ord("q"):
     #     break
     # plt.imshow(first_frame)
-    # plt.savefig(f"ref_{folder.split(os.sep)[-1]}.png")
+    # plt.savefig(f"ref_X{folder.split(os.sep)[-1]}.png")
     # is_single_color(first_frame, save=True, name=f"ref_{folder.split(os.sep)[-1]}.png")
     cap = cv2.VideoCapture(video_file)
 

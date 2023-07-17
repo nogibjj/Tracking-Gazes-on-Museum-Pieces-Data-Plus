@@ -824,9 +824,18 @@ def reference_image_finder(
     #     best_frames_per_minute[best_bucket_frame_num] = best_bucket_frame.copy()
 
     # finding the final best frame to become the reference frame
-
+    final_list = list(final_frame_dictionary_gray.keys())
+    for key in final_list:
+        if is_single_color(final_frame_dictionary_original[key], robust=True):
+            final_list.pop(final_list.index(key))
+            print(f"Removed key {key} from the final list")
+        else:
+            print(f"Final list Key {key} is not single colored")
+    # reference_frame_gray, reference_frame_num = best_frame_finder(
+    #     final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
+    # )
     reference_frame_gray, reference_frame_num = best_frame_finder(
-        final_frame_dictionary_gray, list(final_frame_dictionary_gray.keys())
+        final_frame_dictionary_gray, final_list
     )
 
     reference_frame_original = final_frame_dictionary_original[reference_frame_num]
