@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import math
 import collections
 from collections import Counter
+import scipy
+
+plt.style.use("ggplot")
 
 
 # Groupby function
@@ -413,9 +416,9 @@ qualify["angle(r)"] = qualify.apply(
 
 
 # Demographics
-"""# Add demographic data to analysis dataframe
-fix_analysis = pd.merge(
-    fix_analysis,
+# Add demographic data to analysis dataframe
+analysis = pd.merge(
+    analysis,
     demographic[
         [
             "School or degree course",
@@ -429,23 +432,141 @@ fix_analysis = pd.merge(
     right_on="codice_eyetr_museo",
     how="left",
 )
-fix_analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
-fix_analysis.sort_values("Age", inplace=True)
-fix_analysis["age group"] = pd.cut(
-    fix_analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
+analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
+analysis.sort_values("Age", inplace=True)
+analysis["age group"] = pd.cut(
+    analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
 )
+
+analysis_men = analysis[analysis["sesso"] == "m"]
+analysis_women = analysis[analysis["sesso"] == "f"]
+
 # Fixation means with demographic data
-fix_mean_age = fix_analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_mean_edu = fix_analysis.groupby("Educational Qualification")[
+fix_mean_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
+fix_mean_edu = analysis.groupby("Educational Qualification")[
     "mean fix duration(s)"
 ].mean()
-fix_mean_gender = fix_analysis.groupby("sesso")["mean fix duration(s)"].mean()
-
+fix_mean_gender = analysis.groupby("sesso")["mean fix duration(s)"].mean()
 
 # Fixation frequency per second with demographic data
-fix_per_sec_age = fix_analysis.groupby("age group")["fixation freq"].mean()
-fix_per_sec_edu = fix_analysis.groupby("Educational Qualification")[
-    "fixation freq"
-].mean()
-fix_per_sec_gender = fix_analysis.groupby("sesso")["fixation freq"].mean()
-"""
+fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
+fix_per_sec_edu = analysis.groupby("Educational Qualification")["fixation freq"].mean()
+fix_per_sec_gender = analysis.groupby("sesso")["fixation freq"].mean()
+
+# Fixation frequency boxplot
+analysis.boxplot(column="fixation freq", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Age")
+plt.suptitle("")
+plt.show()
+
+# Fixation duration with demographic data
+fix_dur_men = analysis_men[["participant_folder", "mean fix duration(s)", "age group"]]
+fix_dur_men["age group"] = fix_dur_men["age group"].astype(str)
+
+fix_dur_women = analysis_women[
+    ["participant_folder", "mean fix duration(s)", "age group"]
+]
+fix_dur_women["age group"] = fix_dur_women["age group"].astype(str)
+
+age1m = fix_dur_men[fix_dur_men["age group"] == "(16.0, 25.0]"]
+age2m = fix_dur_men[fix_dur_men["age group"] == "(25.0, 32.0]"]
+age3m = fix_dur_men[fix_dur_men["age group"] == "(32.0, 40.0]"]
+age4m = fix_dur_men[fix_dur_men["age group"] == "(40.0, 48.0]"]
+
+age1w = fix_dur_women[fix_dur_women["age group"] == "(16.0, 25.0]"]
+age2w = fix_dur_women[fix_dur_women["age group"] == "(25.0, 32.0]"]
+age3w = fix_dur_women[fix_dur_women["age group"] == "(32.0, 40.0]"]
+age4w = fix_dur_women[fix_dur_women["age group"] == "(40.0, 48.0]"]
+age5w = fix_dur_women[fix_dur_women["age group"] == "(55.0, 63.0]"]
+
+# Duration t test
+group1 = scipy.stats.ttest_ind(
+    age1m["mean fix duration(s)"].dropna(), age1w["mean fix duration(s)"].dropna()
+)
+group2 = scipy.stats.ttest_ind(
+    age2m["mean fix duration(s)"].dropna(), age2w["mean fix duration(s)"].dropna()
+)
+group3 = scipy.stats.ttest_ind(
+    age3m["mean fix duration(s)"].dropna(), age3w["mean fix duration(s)"].dropna()
+)
+group4 = scipy.stats.ttest_ind(
+    age4m["mean fix duration(s)"].dropna(), age4w["mean fix duration(s)"].dropna()
+)
+
+age_dur_t = [group1, group2, group3, group4]
+age_dur_t = pd.DataFrame(age_dur_t)
+age_dur_t.index = ["(16.0, 25.0]", "(25.0, 32.0]", "(32.0, 40.0]", "(40.0, 48.0]"]
+
+
+def convert_pvalue_to_asterisks(pvalue):
+    if pvalue <= 0.0001:
+        return "****"
+    elif pvalue <= 0.001:
+        return "***"
+    elif pvalue <= 0.01:
+        return "**"
+    elif pvalue <= 0.05:
+        return "*"
+    return "ns"
+
+
+age_dur_asterisks = age_dur_t["pvalue"].apply(convert_pvalue_to_asterisks)
+
+# Fixation duration errorbar plot
+fix_dur_men_plot = (
+    fix_dur_men.groupby("age group")["mean fix duration(s)"].mean().to_frame()
+)
+fix_dur_men_plot.dropna(inplace=True)
+fix_dur_men_plot["sem"] = fix_dur_men.groupby("age group")["mean fix duration(s)"].sem()
+fix_dur_men_plot["sem"].fillna(0, inplace=True)
+
+fix_dur_women_plot = (
+    fix_dur_women.groupby("age group")["mean fix duration(s)"].mean().to_frame()
+)
+fix_dur_women_plot.dropna(inplace=True)
+fix_dur_women_plot["sem"] = fix_dur_women.groupby("age group")[
+    "mean fix duration(s)"
+].sem()
+fix_dur_women_plot["sem"].fillna(0, inplace=True)
+
+plt.errorbar(
+    fix_dur_men_plot.index,
+    fix_dur_men_plot["mean fix duration(s)"],
+    yerr=fix_dur_men_plot["sem"],
+    capsize=4,
+    color="blue",
+    label="men",
+)
+
+plt.errorbar(
+    fix_dur_women_plot.index,
+    fix_dur_women_plot["mean fix duration(s)"],
+    yerr=fix_dur_women_plot["sem"],
+    capsize=4,
+    color="red",
+    label="women",
+)
+
+"""plt.text(0.2, 0.62, "10", ha="center")
+plt.text(1.1, 0.52, "2", ha="center")
+plt.text(2, 0.45, "1", ha="center")
+plt.text(3, 0.57, "1", ha="center")
+
+plt.text(0, 0.43, "12", ha="center")
+plt.text(1, 0.43, "7", ha="center")
+plt.text(2, 0.345, "1", ha="center")
+plt.text(3, 0.35, "2", ha="center")
+plt.text(4, 0.57, "1", ha="center")
+
+plt.text(0, 0.94, "ns", ha="center")
+plt.text(1, 0.57, "ns", ha="center")
+plt.text(2, 0.51, "ns", ha="center")
+plt.text(3, 0.62, "*", ha="center")"""
+
+plt.legend()
+plt.xlabel("Age Group")
+plt.ylabel("Fixation Duration (s)")
+plt.title("Fixation Duration by Gender and Age")
+plt.show()
