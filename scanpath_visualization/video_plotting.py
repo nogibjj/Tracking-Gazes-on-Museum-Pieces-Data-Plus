@@ -16,7 +16,6 @@ try:
     env = sys.argv[1]
     env_var = eval(env + "_config")
 except Exception as ee:
-    print(ee)
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
 
@@ -49,7 +48,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         height,width,layers=curr_frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-        video = cv2.VideoWriter(os.path.join(env_var.ROOT_PATH, name, f'scanpath_video_{name}.mp4'), fourcc, 30, (width, height))
+        video = cv2.VideoWriter(f'outputs/video/scanpath_video_{name}.mp4', fourcc, 30, (width, height))
 
         frame_no = 1
         prev_point = None
