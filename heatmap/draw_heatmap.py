@@ -78,14 +78,17 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         f"""Starting to look for reference image for the video {video_file},
           from the folder {folder}"""
     )
-
     if env_var.REFERENCE_IMAGE:
-        first_frame = cv2.imread(os.path.join(env_var.ROOT_PATH, 'reference_image.png'))
+        first_frame = cv2.imread("reference_image.png")
         gray_first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
-        print("Found existing reference image.")
-
+        print(
+            f"""Using the user reference image for the video {video_file}
+            from the folder {folder}"""
+        )
     else:
-        first_frame, gray_first_frame = reference_image_finder(video_file, early_stop=False)
+        first_frame, gray_first_frame = reference_image_finder(
+            video_file, early_stop=False
+        )
         print(
             f"""Found the reference image for the video {video_file}
             from the folder {folder}"""
@@ -106,8 +109,8 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         frame_no += 1
         frame_exists, curr_frame = cap.read()
 
-        if frame_no < env_var.SKIP_FIRST_N_FRAMES:
-            continue
+        # if frame_no < env_var.SKIP_FIRST_N_FRAMES:
+        #     continue
 
         ##### Uncomment below if early stopping is required
         # if frame_no > SKIP_FIRST_N_FRAMES + RUN_FOR_FRAMES:

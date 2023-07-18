@@ -44,9 +44,16 @@ def is_single_color(
         # print("The image is only of one color.")
         return True
     elif robust:
-        # print("The image is mostly one color.")
-        most_common_color = max(set(pixels), key=pixels.count)
-        if pixels.count(most_common_color) > len(pixels) * 0.9:
+        # most_common_color = max(set(pixels), key=pixels.count)
+        new_pixels = np.array(image.getdata())
+        arr, counts = np.unique(pixels, return_counts=True)
+        idx = np.argmax(counts)
+        most_common_color = arr[idx]
+        # if pixels.count(most_common_color) > len(pixels) * 0.9:
+        # print("The image is mostly one color or more colors.")
+        # return True
+        if counts[idx] > new_pixels.shape[0] * 0.9:
+            # print("The image is mostly one color or more colors.")
             return True
     else:
         # print("The image contains multiple colors.")
@@ -76,13 +83,13 @@ def image_matcher(reference_frame, comparison_frame):
     print("kp2 length : ", len(kp2))
 
     if kp1 == ():
-        print('Reference Frame has no features to detect')
+        print("Reference Frame has no features to detect")
         return [], (), ()
 
     if kp2 == ():
-        print('Comparision frame has no features to detect')
+        print("Comparision frame has no features to detect")
         return [], (), ()
-    
+
     # BFMatcher with default params
     bf = cv2.BFMatcher()
     matches = bf.knnMatch(des1, des2, k=2)
@@ -169,7 +176,7 @@ def keypoints_finder(
     )
     if matches == []:
         return None
-    
+
     pairs_list = ideal_pair(
         dist_ranges=dist_ranges,
         gaze_point=gaze_point,
@@ -305,7 +312,8 @@ def reference_gaze_point_mapper(
     reference_frame,
     comparison_frame,
     gaze_point,
-    dist_ranges=np.arange(0.05, 1.0, 0.05),
+    # dist_ranges=np.arange(0.05, 1.0, 0.05),
+    dist_ranges=np.arange(0.0, 1.0, 0.01),
 ):
     """Map the gaze point from the comparison image to the reference image.
 
@@ -528,6 +536,42 @@ def save_outputs(
     updated_gaze.to_csv(f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze_SIFT.csv", index=False)
 
 
+def save_outputs_template(
+    ROOT_PATH,
+    name,
+    first_frame,
+    DETECT_BOUNDING_SIZE,
+    final_img,
+    updated_gaze,
+    TEMP_OUTPUT_DIR,
+):
+    """
+    Function to save all the required outputs in a temp and original folder
+    """
+    ### Write the outputs to the original data folder
+    cv2.imwrite(
+        os.path.join(ROOT_PATH, f"{name}/reference_image_{name}_template.png"),
+        first_frame,
+    )
+    cv2.imwrite(
+        os.path.join(
+            ROOT_PATH,
+            f"{name}/heatmap_output_{name}_{DETECT_BOUNDING_SIZE}_template.png",
+        ),
+        final_img,
+    )
+    updated_gaze.to_csv(
+        os.path.join(ROOT_PATH, f"{name}/updated_gaze_{name}_template.csv"), index=False
+    )
+
+    ### Write the data to the temp output folder
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_reference_image_template.png", first_frame)
+    cv2.imwrite(f"{TEMP_OUTPUT_DIR}/{name}_heatmap_template.png", final_img)
+    updated_gaze.to_csv(
+        f"{TEMP_OUTPUT_DIR}/{name}_updated_gaze_template.csv", index=False
+    )
+
+
 # mse function for the reference image calculations
 def mse(img1, img2):
     """Mean squared error function for
@@ -645,7 +689,7 @@ def reference_image_finder(
         success, frame = cap.read()
 
         if success:
-            if is_single_color(frame):
+            if is_single_color(frame, robust=True):
                 print("Frame is of one color. Skipping...")
                 continue
             frame_number += 1
@@ -655,8 +699,19 @@ def reference_image_finder(
             temp_frame_dictionary_gray[frame_number] = gray_frame.copy()
 
             if frame_counter == buckets:
+                # print(f"Frame counter reached {buckets}, now cleaning keys...")
+                # gray_keys_clean = list(temp_frame_dictionary_gray.keys())
+                # for key in gray_keys_clean:
+                #     if is_single_color(
+                #         temp_frame_dictionary_original[key], robust=True
+                #     ):
+                #         temp_frame_dictionary_gray.pop(key)
+                #         temp_frame_dictionary_original.pop(key)
+                #         print(f"Removed key {key} from the temp frame dictionary")
+                #     else:
+                #         print(f"Key {key} is not single colored")
                 best_bucket_frame, best_bucket_frame_num = best_frame_finder(
-                    temp_frame_dictionary_gray, list(temp_frame_dictionary_gray.keys())
+                    temp_frame_dictionary_gray, gray_keys_clean
                 )
                 print(
                     f"Best frame for bucket {frame_number-buckets}-{frame_number}: {best_bucket_frame_num}"
