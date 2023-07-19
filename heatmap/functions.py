@@ -184,6 +184,9 @@ def keypoints_finder(
         kp1=kp1,
         kp2=kp2,
     )
+    print("The pairs list is :")
+    print(pairs_list)
+    print("*" * 20)
 
     if pairs_list is None:
         return None
