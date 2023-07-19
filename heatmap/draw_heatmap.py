@@ -71,7 +71,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         video_file = glob.glob(video_file)[0]
     except:
         print(f"Video file not found for {folder}")
-        print("Skipping this folder")
+        print(f"Skipping this {folder}")
         continue
 
     gaze_df = pd.read_csv(csv_file)
