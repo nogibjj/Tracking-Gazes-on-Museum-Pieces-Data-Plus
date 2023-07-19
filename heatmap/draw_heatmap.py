@@ -66,8 +66,13 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     name = folder.split(os.sep)[-1]
 
     csv_file = os.path.join(folder, "gaze.csv")
-    video_file = os.path.join(folder, "*.mp4")
-    video_file = glob.glob(video_file)[0]
+    try:
+        video_file = os.path.join(folder, "*.mp4")
+        video_file = glob.glob(video_file)[0]
+    except:
+        print(f"Video file not found for {folder}")
+        print("Skipping this folder")
+        continue
 
     gaze_df = pd.read_csv(csv_file)
     gaze_df = convert_timestamp_ns_to_ms(gaze_df)
