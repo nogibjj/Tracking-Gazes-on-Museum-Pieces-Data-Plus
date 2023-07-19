@@ -56,9 +56,17 @@ folder_list = sorted(os.listdir(env_var.ROOT_PATH))
 
 if env == "april":
     folder_list = folder_list[:18]
+    print("April's folder_list", folder_list)
+    print("*" * 50)
+    print("April's Run")
+    print("*" * 50)
 
 elif env == "eric":
     folder_list = folder_list[18:]
+    print("Eric's folder_list", folder_list)
+    print("*" * 50)
+    print("Eric's Run")
+    print("*" * 50)
 
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
