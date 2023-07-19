@@ -52,6 +52,14 @@ except:
 
 create_directory(env_var.TEMP_OUTPUT_DIR)
 
+folder_list = sorted(os.listdir(env_var.ROOT_PATH))
+
+if env == "april":
+    folder_list = folder_list[:18]
+
+elif env == "eric":
+    folder_list = folder_list[18:]
+
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
     if not os.path.isdir(folder):

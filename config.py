@@ -21,12 +21,14 @@ class aditya_config(base_class):
 
 
 class eric_config(base_class):
-    ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
+    # ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
+    ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\VulciFinal"
     TEMP_OUTPUT_DIR = "." + os.sep + "output"
 
 
 class april_config(base_class):
-    ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
+    # ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
+    ROOT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/VulciFinal"
     TEMP_OUTPUT_DIR = "." + os.sep + "output"
 
 
