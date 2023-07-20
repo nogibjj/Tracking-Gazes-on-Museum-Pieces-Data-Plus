@@ -78,9 +78,9 @@ def image_matcher(reference_frame, comparison_frame):
 
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(reference_frame, None)
-    print("kp1 length : ", len(kp1))
+    # print("kp1 length : ", len(kp1))
     kp2, des2 = sift.detectAndCompute(comparison_frame, None)
-    print("kp2 length : ", len(kp2))
+    # print("kp2 length : ", len(kp2))
 
     if kp1 == ():
         print("Reference Frame has no features to detect")
@@ -184,6 +184,9 @@ def keypoints_finder(
         kp1=kp1,
         kp2=kp2,
     )
+    # print("The pairs list is :")
+    # print(pairs_list)
+    # print("*" * 20)
 
     if pairs_list is None:
         return None

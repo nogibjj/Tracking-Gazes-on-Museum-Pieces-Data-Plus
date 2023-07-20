@@ -14,6 +14,7 @@ Ref: https://stackoverflow.com/questions/56472024/how-to-change-the-opacity-of-b
 """
 import sys
 import os
+import time
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # prepend parent directory to the system path:
@@ -51,6 +52,22 @@ except:
 
 create_directory(env_var.TEMP_OUTPUT_DIR)
 
+folder_list = sorted(os.listdir(env_var.ROOT_PATH))
+
+if env == "april":
+    folder_list = folder_list[:18]
+    print("April's folder_list", folder_list)
+    print("*" * 50)
+    print("April's Run")
+    print("*" * 50)
+
+elif env == "eric":
+    folder_list = folder_list[18:]
+    print("Eric's folder_list", folder_list)
+    print("*" * 50)
+    print("Eric's Run")
+    print("*" * 50)
+
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
     if '2023' not in folder:
@@ -68,8 +85,13 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     name = folder.split(os.sep)[-1]
 
     csv_file = os.path.join(folder, "gaze.csv")
-    video_file = os.path.join(folder, "*.mp4")
-    video_file = glob.glob(video_file)[0]
+    try:
+        video_file = os.path.join(folder, "*.mp4")
+        video_file = glob.glob(video_file)[0]
+    except:
+        print(f"Video file not found for {folder}")
+        print(f"Skipping this {folder}")
+        continue
 
     gaze_df = pd.read_csv(csv_file)
     gaze_df = convert_timestamp_ns_to_ms(gaze_df)
@@ -123,7 +145,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
 
         # elif frame_no == env_var.SKIP_FIRST_N_FRAMES and frame_exists:
         #     first_frame = curr_frame
-
+        start_time = time.time()
         if frame_exists:
             print(f"Processing frame {frame_no}")
 
@@ -177,6 +199,26 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
 
             if ref_center == None:
                 continue
+            val = 366
+            # if closest_row["index"][0] == val:
+            #     # curr_frame = cv2.circle(
+            #     #     curr_frame, (x_pixel, y_pixel), 10, (0, 255, 0), -1
+            #     # )
+            #     # print("These are the coordinates", (x_pixel, y_pixel))
+            #     # # save the current frame
+            #     # cv2.imwrite(
+            #     #     f"special_case_{val}{frame_no}_{folder.split(os.sep)[-1]}.png",
+            #     #     curr_frame,
+            #     # )
+
+            #     print("Saved the special case frame")
+            #     print("*" * 50)
+            #     ref_center = reference_gaze_point_mapper(
+            #         gray_first_frame, gray_curr_frame, (x_pixel, y_pixel)
+            #     )
+            #     # changing to color did nothing
+            #     print(f"Done SIFT for {frame_no}")
+            print("*" * 50)
 
             closest_row["ref_center_x"] = ref_center[0]
             closest_row["ref_center_y"] = ref_center[1]
@@ -206,3 +248,5 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         updated_gaze,
         env_var.TEMP_OUTPUT_DIR,
     )
+    end = time.time()
+    print(f"Time taken for {name} is {end - start_time}")
