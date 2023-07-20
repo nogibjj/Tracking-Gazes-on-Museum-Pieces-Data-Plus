@@ -20,7 +20,7 @@ from heatmap.functions import (
     save_outputs,
 )
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
-from config import *
+from config.config import *
 import datetime as dt
 
 # # Set env variables based on config file

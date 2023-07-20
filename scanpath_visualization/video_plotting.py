@@ -10,7 +10,7 @@ import traceback
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-from config import *
+from config.config import *
 
 try:
     env = sys.argv[1]
@@ -19,8 +19,11 @@ except Exception as ee:
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
 
-for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
-        folder = os.path.join(env_var.ROOT_PATH, folder)
+data_folder_path = os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE)
+output_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE)
+
+for index, folder in enumerate(os.listdir(data_folder_path)):
+        folder = os.path.join(data_folder_path, folder)
         if not os.path.isdir(folder):
             continue
         print(f'Running for folder - {folder}')
@@ -31,6 +34,10 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         video_file = glob.glob(video_file)[0]
         gaze_csv = pd.read_csv(csv_file)
 
+        output_path = os.path.join(output_folder_path, name)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        
         gaze_csv['timestamp [ns]'] = pd.to_datetime(gaze_csv['timestamp [ns]'])
         start_timestamp = gaze_csv['timestamp [ns]'][0]
         gaze_csv['timestamp [ns]'] = (gaze_csv['timestamp [ns]'] - start_timestamp)
@@ -48,7 +55,7 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
         height,width,layers=curr_frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-        video = cv2.VideoWriter(f'outputs/video/scanpath_video_{name}.mp4', fourcc, 30, (width, height))
+        video = cv2.VideoWriter(f'{output_path}/scanpath_video.mp4', fourcc, 30, (width, height))
 
         frame_no = 1
         prev_point = None

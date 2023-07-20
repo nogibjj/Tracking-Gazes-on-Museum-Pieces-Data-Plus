@@ -10,7 +10,7 @@ import sys
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-from config import *
+from config.config import *
 from heatmap.functions import create_directory
 
 # print(" Made it past imports")

@@ -1,0 +1,32 @@
+{
+    "android_device_id": "0a92e8c4ec5a9871",
+    "android_device_model": "OnePlus8",
+    "android_device_name": "1vMJWaUGKl6eF_402SAAAAABdESVJFQ1QtMlYtQkl5Vy1TVTR5TURFeg==",
+    "app_version": "1.4.30-prod",
+    "calib_version": 1,
+    "data_format_version": "1.4",
+    "duration": 60620000000,
+    "gaze_offset": [
+        0.0,
+        0.0
+    ],
+    "glasses_serial_number": "frhv7",
+    "os_version": "11",
+    "pipeline_version": "1.10.0",
+    "recording_id": "37eb8b4c-3c30-445c-b4db-773cc7ac99eb",
+    "scene_camera_serial_number": "ckzjr",
+    "start_time": 1688463099250000000,
+    "template_data": {
+        "data": {
+            "86cdeb69-e79e-4ca5-b2f9-a02ebb1457fb": [
+                "Site B Day 1"
+            ]
+        },
+        "id": "98f75d86-e75c-4876-a6ce-9e80597bcf39",
+        "recording_name": "2023-07-04_11:31:39",
+        "version": "2021-06-12T09:51:59.621434Z"
+    },
+    "wearer_id": "a95f777d-18f4-449c-a902-e1cb4be5ec01",
+    "wearer_name": "2023_VUL01_VTS_A",
+    "workspace_id": "13edb37c-0dbc-4a88-91e1-1abee4cbf6b8"
+}

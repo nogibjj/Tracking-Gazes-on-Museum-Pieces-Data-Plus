@@ -40,7 +40,7 @@ from functions import (
 import matplotlib.pyplot as plt
 import gc
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
-from config import *
+from config.config import *
 
 # Set env variables based on config file
 try:
@@ -55,6 +55,8 @@ create_directory(env_var.TEMP_OUTPUT_DIR)
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
     if not os.path.isdir(folder):
+        continue
+    if '2023' not in folder:
         continue
 
     print("#" * 50)

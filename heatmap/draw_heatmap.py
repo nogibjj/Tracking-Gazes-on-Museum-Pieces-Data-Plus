@@ -39,7 +39,7 @@ from functions import (
 import matplotlib.pyplot as plt
 import gc
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
-from config import *
+from config.config import *
 
 # Set env variables based on config file
 try:
@@ -53,6 +53,9 @@ create_directory(env_var.TEMP_OUTPUT_DIR)
 
 for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
     folder = os.path.join(env_var.ROOT_PATH, folder)
+    if '2023' not in folder:
+        continue
+
     if not os.path.isdir(folder):
         continue
 
@@ -79,7 +82,9 @@ for index, folder in enumerate(os.listdir(env_var.ROOT_PATH)):
           from the folder {folder}"""
     )
     if env_var.REFERENCE_IMAGE:
+        print(os.getcwd())
         first_frame = cv2.imread("reference_image.png")
+        print(first_frame.shape)
         gray_first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
         print(
             f"""Using the user reference image for the video {video_file}
