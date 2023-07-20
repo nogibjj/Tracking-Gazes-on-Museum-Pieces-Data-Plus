@@ -29,7 +29,9 @@ import sys
 
 sys.path.insert(0, "..")
 print(sys.path)
-all_gaze = pd.read_csv("../data/all_gaze_original.csv", compression="gzip")
+all_gaze = pd.read_csv(
+    "../data/truscan_couple_statue/all_gaze_truscan.csv", compression="gzip"
+)
 
 all_gaze.reset_index(drop=True, inplace=True)
 
@@ -59,7 +61,7 @@ all_gaze["tag"] = all_gaze["tag"].map(mapping)
 
 all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
 
-demographic = pd.read_excel("../data/demographic.xlsx")
+demographic = pd.read_excel("../data/truscan_couple_statue/demographic.xlsx")
 demographic = demographic[
     [
         "School or degree course",
@@ -460,6 +462,36 @@ plt.ylabel("Frequency per second")
 plt.title("Fixation Frequency by Age")
 plt.suptitle("")
 plt.show()
+
+# Time spent on each feature
+tag_time = (
+    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+    .reset_index()
+)
+
+# Time spent on each feature boxplot
+tag_time.boxplot(column="gaze duration(s)", by="tag", vert=False)
+plt.xlabel("Duration (s)")
+plt.ylabel("Feature")
+plt.title("Fixation Duration by Feature (All Participants)")
+plt.suptitle("")
+plt.show()
+
+"""# Sarcophagus vs Vulci plots
+comparison_couple = analysis[['participant_folder', 'mean fix duration(s)']]
+comparison_couple['artifact'] = 'Sarcophagus of the Spouses'
+comparison_vulci = analysis_vts[['participant_folder', 'mean fix duration(s)']]
+comparison = pd.concat([comparison_couple, comparison_vulci])
+comparison['artifact'].fillna('Vulci Dig Site', inplace=True)
+
+comparison.boxplot(column='mean fix duration(s)', by='artifact')
+plt.xlabel("Artifact")
+plt.ylabel("Distance (px)")
+plt.title("Sarcophagus vs Dig Site: Participant Fixation Duration")
+plt.suptitle("")
+plt.show()"""
 
 """# Fixation duration with demographic data
 fix_dur_men = analysis_men[["participant_folder", "mean fix duration(s)", "age group"]]

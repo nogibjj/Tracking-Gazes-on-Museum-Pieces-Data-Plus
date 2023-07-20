@@ -17,7 +17,8 @@ import sys
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-from config.config import *
+# from config.config import *
+from config import *
 from heatmap.functions import create_directory
 
 # print(" Made it past imports")
@@ -235,6 +236,7 @@ for folder in participant_paths_folders:
 
 
 for folder in participant_paths_folders:
+    print(f"Starting {folder}")
     files = os.listdir(folder)
     participant_id = folder.split(os.sep)[-1]  # fix for future reference
     # print(files)
@@ -261,6 +263,8 @@ for folder in participant_paths_folders:
 
         elif "updated_gaze" in file and ".csv" in file:  # add participant as condition
             participant_reference_gaze_csv = pd.read_csv(os.path.join(folder, file))
+            print(f"Participant Csv found : {os.path.join(folder, file)}")
+            print("*" * 50)
 
     tag_file_path = os.path.join(folder, most_recent_tag_file)
     print(tag_file_path)
@@ -274,9 +278,14 @@ for folder in participant_paths_folders:
     # participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
     # participant_reference_gaze_csv = pd.read_csv("gaze_csv_tag_exp_sb.csv")
 
-    participant_reference_gaze_csv = ref_coordinate_processing(
-        participant_reference_gaze_csv
-    )
+    try:
+        participant_reference_gaze_csv = ref_coordinate_processing(
+            participant_reference_gaze_csv
+        )
+
+    except:
+        print(f"No Updated Gaze Csv found for folder : {folder}")
+        continue
 
     participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
         "ref_coordinates"
@@ -289,5 +298,7 @@ for folder in participant_paths_folders:
         )
     )
     participant_reference_gaze_csv.to_csv(os.path.join(folder, "final_gaze_tagged.csv"))
+
+    del participant_reference_gaze_csv
 
     print("Done for folder -- ", folder)

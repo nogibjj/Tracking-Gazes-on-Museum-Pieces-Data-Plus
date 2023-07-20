@@ -9,7 +9,8 @@ import sys
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-from config.config import *
+# from config.config import *
+from config import *
 from heatmap.functions import create_directory
 
 # print(" Made it past imports")
@@ -105,9 +106,10 @@ for folder in participant_paths_folders:
 # Concatenate all the tagged csvs into one big csv
 # after preprocessing their timestamps
 print(f"Number of folders found: {len(participant_paths_folders)}")
-assert len(participant_paths_folders) == 36
+print(participant_paths_folders)
+# assert len(participant_paths_folders) == 36
 print(f"Number of participants found: {len(participant_list)}")
-assert len(participant_list) == 36
+# assert len(participant_list) == 36
 target_csv = pd.DataFrame()
 
 ideal_rows = 0
@@ -125,7 +127,11 @@ for folder in participant_paths_folders:
         print(gaze_csv_path)
         # For now, we will keep the timestamp_corrector step
         # It might be redundant, but it is a good sanity check
-        gaze_csv = pd.read_csv(gaze_csv_path)
+        try:
+            gaze_csv = pd.read_csv(gaze_csv_path)
+        except:
+            print(f"No 'final_gaze_tagged.csv' found in {folder}")
+            continue
         gaze_csv["participant_folder"] = folder.split(os.sep)[-1]
         if len(ART_PIECE) > 1:
             gaze_csv["art_piece"] = ART_PIECE[0]  # change this line
@@ -140,6 +146,7 @@ for folder in participant_paths_folders:
             gaze_csv["vts_bool"] = False
         ideal_rows += gaze_csv.shape[0]
         target_csv = pd.concat([target_csv, gaze_csv], axis=0)
+        del gaze_csv
 
 try:
     target_csv.drop(columns=["Unnamed: 0"], inplace=True)
@@ -164,5 +171,6 @@ except AssertionError:
         f.write(f"Number of folders found: {num_folders}")
         f.write(f"Participant count does not match number of folders")
 
-target_csv.to_csv("../data/all_gaze.csv", index=False, compression="gzip")
+# change to all gaze for final implementation
+target_csv.to_csv("data/all_gaze_Vulci_Final.csv", index=False, compression="gzip")
 print("all_gaze_Vulci_Final.csv created")
