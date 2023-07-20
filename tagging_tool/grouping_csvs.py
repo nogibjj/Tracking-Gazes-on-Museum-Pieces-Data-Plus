@@ -45,19 +45,21 @@ participant_paths_folders = []
 for folder in os.listdir(ROOT_PATH):
     try:
         new_path = os.path.join(ROOT_PATH, folder)
-        # os.listdir(new_path)
-        for special_file in os.listdir(new_path):
-            try:
-                further_path = os.path.join(new_path, special_file)
-                os.listdir(further_path)
-                print(f"{special_file} is a new data directory")
-                participant_paths_folders.append(further_path)
-            except:
-                print(f"{special_file} is a file")
-                continue
-        # print(f"Running for folder -- {folder}")
-        # print(f"{folder} is a directory")
-        # participant_paths_folders.append(new_path)
+        os.listdir(new_path)
+        # Vulci Fixes Start Here
+        # for special_file in os.listdir(new_path):
+        #     try:
+        #         further_path = os.path.join(new_path, special_file)
+        #         os.listdir(further_path)
+        #         print(f"{special_file} is a new data directory")
+        #         participant_paths_folders.append(further_path)
+        #     except:
+        #         print(f"{special_file} is a file")
+        #         continue
+        # Vulci Fixes End Here
+        print(f"Running for folder -- {folder}")
+        print(f"{folder} is a directory")
+        participant_paths_folders.append(new_path)
 
     except:
         print(f"{folder} is a file")
@@ -102,8 +104,10 @@ for folder in participant_paths_folders:
 
 # Concatenate all the tagged csvs into one big csv
 # after preprocessing their timestamps
-assert len(participant_paths_folders) == 38
-assert len(participant_list) == 38
+print(f"Number of folders found: {len(participant_paths_folders)}")
+assert len(participant_paths_folders) == 36
+print(f"Number of participants found: {len(participant_list)}")
+assert len(participant_list) == 36
 target_csv = pd.DataFrame()
 
 ideal_rows = 0
@@ -112,13 +116,13 @@ for folder in participant_paths_folders:
     files = os.listdir(folder)
     participant_id = folder.split(os.sep)[-1]
 
-    # if "final_gaze_tagged.csv" in files:
-    if "gaze.csv" in files:
+    if "final_gaze_tagged.csv" in files:
+        # if "gaze.csv" in files:
         print(f"file found in Processing {folder}")
         participant_count += 1
-        # gaze_csv_path = os.path.join(folder, "final_gaze_tagged.csv")
-        gaze_csv_path = os.path.join(folder, "gaze.csv")
-        # print(gaze_csv_path)
+        gaze_csv_path = os.path.join(folder, "final_gaze_tagged.csv")
+        # gaze_csv_path = os.path.join(folder, "gaze.csv")
+        print(gaze_csv_path)
         # For now, we will keep the timestamp_corrector step
         # It might be redundant, but it is a good sanity check
         gaze_csv = pd.read_csv(gaze_csv_path)
@@ -161,4 +165,4 @@ except AssertionError:
         f.write(f"Participant count does not match number of folders")
 
 target_csv.to_csv("../data/all_gaze.csv", index=False, compression="gzip")
-print("all_gaze.csv created")
+print("all_gaze_Vulci_Final.csv created")
