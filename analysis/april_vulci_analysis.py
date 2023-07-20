@@ -6,6 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
+import collections
+from collections import Counter
+import scipy
 
 
 # Groupby function
@@ -25,7 +28,7 @@ import sys
 
 sys.path.insert(0, "..")
 print(sys.path)
-all_gaze = pd.read_csv("../data/all_gaze_Vulci.csv", compression="gzip")
+all_gaze = pd.read_csv("../data/all_gaze_Vulci_Final.csv", compression="gzip")
 
 all_gaze.reset_index(drop=True, inplace=True)
 gaze_copy = all_gaze
@@ -51,7 +54,9 @@ fixation_count = gaze_copy.groupby("participant_folder")["fixation id"].sum().to
 no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
 null_participants = no_fixations.loc[:, "participant_folder"].to_list()
 gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
-
+gaze_fixed["time elapsed(s)"] = gaze_fixed.groupby("participant_folder")[
+    "duration"
+].cumsum()
 
 # Saccade dataframe
 fixation_null = gaze_fixed[gaze_fixed["fixation id"].isnull()]
@@ -64,8 +69,6 @@ fixation = (
 )
 gaze_saccades = pd.concat([fixation_null, fixation])
 gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
-gaze_saccades = gaze_saccades.drop("row_number", axis=1)
-gaze_saccades.reset_index(inplace=True)
 
 # Saccade calculations
 saccade_calc = gaze_saccades[gaze_saccades["fixation id"].notnull()]
@@ -107,9 +110,10 @@ choices = [
 ]
 
 saccade_calc["saccade direction"] = np.select(conditions, choices, "none")
+saccade_calc = saccade_calc.reset_index(drop=True)
 saccade_calc = saccade_calc[
     [
-        "index",
+        "row_number",
         "saccade duration(s)",
         "change x",
         "change y",
@@ -117,17 +121,15 @@ saccade_calc = saccade_calc[
         "saccade direction",
     ]
 ]
-saccade_calc.reset_index(drop=True, inplace=True)
 
 gaze_saccades = pd.merge(
-    gaze_saccades, saccade_calc, left_on=["index"], right_on="index", how="left"
+    gaze_saccades, saccade_calc, left_on="row_number", right_on="row_number", how="left"
 )
 id2 = gaze_saccades.groupby(["participant_folder", "fixation id"])
 rearrange = gaze_saccades[gaze_saccades["fixation id"].isnull()]
 gaze_saccades = pd.concat([id2.tail(1)])
 gaze_saccades = pd.concat([rearrange, gaze_saccades])
-gaze_saccades = gaze_saccades.sort_values("index").reset_index(drop=True)
-gaze_saccades.reset_index(drop=True, inplace=True)
+gaze_saccades = gaze_saccades.sort_values("row_number").reset_index(drop=True)
 
 # Insert empty row if saccade isn't recorded
 m = gaze_saccades["fixation id"].isna()
@@ -151,9 +153,6 @@ gaze_saccades["participant_folder"] = gaze_saccades["participant_folder"].fillna
 
 # Saccades per second
 saccade_time = gaze_saccades
-saccade_time["time elapsed(s)"] = saccade_time.groupby("participant_folder")[
-    "duration"
-].cumsum()
 saccade_time.dropna(subset="fixation id", inplace=True)
 
 m = saccade_time["fixation id"].isna()
@@ -215,6 +214,7 @@ sac_dur_mean = (
 )
 sac_dur_mean.reset_index(inplace=True)
 
+
 # Fixation dataframe
 gaze_fixation = gaze_fixed[~gaze_fixed["fixation id"].isnull()].copy()
 gaze_fixation["fixation id"].value_counts(dropna=False)
@@ -237,7 +237,7 @@ gaze_fixation = pd.merge(
     how="left",
 )
 
-fix_mean = fix_durations.groupby("participant_folder")["fixation duration(s)"].mean()
+fix_mean = fix_durations.groupby(["participant_folder"])["fixation duration(s)"].mean()
 fix_mean = fix_mean.to_frame()
 fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
 
@@ -245,11 +245,8 @@ overall_mean = fix_mean["mean fix duration(s)"].mean()
 
 # Fixations per second for each participant
 fix_per_time = gaze_fixed[
-    ["participant_folder", "fixation id", "duration"]
+    ["participant_folder", "fixation id", "time elapsed(s)"]
 ].reset_index(drop=True)
-fix_per_time["time elapsed(s)"] = fix_per_time.groupby("participant_folder")[
-    "duration"
-].cumsum()
 
 fix_per_sec = (
     fix_per_time.groupby(
@@ -264,14 +261,81 @@ fix_per_sec_mean = (
 )
 fix_per_sec_mean.reset_index(inplace=True)
 
+# Most fixated on feature
+most_fix_tag = (
+    gaze_fixation.groupby("participant_folder")["tag"].agg(pd.Series.mode).to_frame()
+)
+most_fix_tag.reset_index(inplace=True)
+
+# Fixation time per feature
+tag_fix = (
+    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+)
+tag_fix.reset_index(inplace=True)
+tag_fix_avg = tag_fix.groupby("tag")["gaze duration(s)"].mean()
+
+# First and last things participants fixated on and for how long
+g = gaze_fixation.groupby("participant_folder")
+
+first = pd.concat([g.head(1)]).sort_values("participant_folder")
+first = first[["participant_folder", "tag", "fixation duration(s)"]]
+first.reset_index(inplace=True)
+
+last = pd.concat([g.tail(1)]).sort_values("participant_folder")
+last = last[["participant_folder", "tag", "fixation duration(s)"]]
+last.reset_index(inplace=True)
+
+
+# Most common sequence
+def most_common(words, n):
+    last_group = len(words) - (n - 1)
+
+    groups = (tuple(words[start : start + n]) for start in range(last_group))
+
+    return Counter(groups).most_common()
+
+
+uniqueid = gaze_fixation.groupby(["participant_folder", "fixation id"])
+unique_fix = pd.concat([uniqueid.first()]).reset_index()
+mode_fix = uniqueid["tag"].agg(pd.Series.mode).to_frame().reset_index()
+unique_fix["tag"] = mode_fix["tag"].astype(str)
+unique_fix = unique_fix[["participant_folder", "tag"]]
+
+participants = dict()
+for k, v in unique_fix.groupby("participant_folder")["tag"]:
+    participants[k] = v
+
+for k, v in participants.items():
+    participants[k] = most_common(v, 3)
+
+for k, v in participants.items():
+    participants[k] = v[0]
+
+common_seq = pd.DataFrame.from_dict(participants).transpose().reset_index()
+common_seq.columns = ["participant_folder", "sequence", "count"]
 
 # Putting together cumulative analysis dataframe
 analysis = fix_mean.reset_index()
 analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+analysis["most fixated tag"] = most_fix_tag["tag"]
+analysis["first fixation"] = first["tag"]
+analysis["first fix time"] = first["fixation duration(s)"]
+analysis["last fixation"] = last["tag"]
+analysis["last fix time"] = last["fixation duration(s)"]
 analysis["mean sac duration(s)"] = sac_dur_mean["saccade duration(s)"]
 analysis["mean sac distance"] = sac_distance_mean["saccade distance"]
 analysis["mode sac direction"] = direction_mode["saccade direction"]
 analysis["saccade freq"] = sac_per_sec_mean["saccade freq"]
+analysis["most common sequence"] = common_seq["sequence"]
+analysis["sequence count"] = common_seq["count"]
+
+# First time participants fixated on each feature
+tagid = gaze_fixation.groupby(["participant_folder", "tag"])
+first_tag = pd.concat([tagid.first()])
+first_tag.reset_index(inplace=True)
+first_tag = first_tag[["participant_folder", "tag", "time elapsed(s)"]]
 
 # VTS vs non-VTS
 analysis_vts = pd.merge(
@@ -285,20 +349,49 @@ id3 = analysis_vts.groupby("participant_folder")
 analysis_vts = pd.concat([id3.head(1)])
 analysis_vts.reset_index(drop=True, inplace=True)
 analysis_vts["vts_bool"] = analysis_vts["vts_bool"].map({False: "Non-VTS", True: "VTS"})
-vts = analysis_vts[analysis_vts["vts_bool"] == True]
-nonvts = analysis_vts[analysis_vts["vts_bool"] == False]
+vts = analysis_vts[analysis_vts["vts_bool"] == "VTS"]
+nonvts = analysis_vts[analysis_vts["vts_bool"] == "Non-VTS"]
 
 # Overall means
-vts_analysis = analysis_vts.drop(["participant_folder", "mode sac direction"], axis=1)
+vts_analysis = analysis_vts.drop(
+    [
+        "participant_folder",
+        "most fixated tag",
+        "first fixation",
+        "first fix time",
+        "last fixation",
+        "last fix time",
+        "mode sac direction",
+        "most common sequence",
+        "sequence count",
+    ],
+    axis=1,
+)
 analysis_mean = vts_analysis.groupby("vts_bool").mean().transpose()
 analysis_mean["Overall Mean"] = (analysis_mean["Non-VTS"] + analysis_mean["VTS"]) / 2
 
 # Make tables an excel
-analysis_vts.to_excel("vulci-raw-metrics.xlsx")
-analysis_mean.to_excel("overall-means.xlsx")
+# analysis_vts.to_excel("vulci-raw-metrics.xlsx")
+# analysis_mean.to_excel("overall-means.xlsx")
 
 # Visualizations (boxplot)
 plt.style.use("ggplot")
+
+# Time spent on each feature
+tag_time = (
+    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+    .reset_index()
+)
+
+# Time spent on each feature boxplot
+tag_time.boxplot(column="gaze duration(s)", by="tag", vert=False)
+plt.xlabel("Duration (s)")
+plt.ylabel("Feature")
+plt.title("Fixation Duration by Feature (All Participants)")
+plt.suptitle("")
+plt.show()
 
 fix_dur_plot = analysis_vts.boxplot(column="mean fix duration(s)", by="vts_bool")
 plt.xlabel("Group")
