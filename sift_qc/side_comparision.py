@@ -34,7 +34,6 @@ for index, folder in enumerate(os.listdir(output_folder_path)):
     updated_gaze = os.path.join(folder, "updated_gaze*.csv")
     updated_gaze = glob.glob(updated_gaze)[0]
 
-    updated_gaze = '/workspaces/Tracking-Gazes-on-Museum-Pieces-Data-Plus/sift_qc/updated_gaze_2022_01bm_SIFT.csv'
     gaze_csv = pd.read_csv(updated_gaze)
 
     output_path = os.path.join(output_folder_path, name)
@@ -87,4 +86,3 @@ for index, folder in enumerate(os.listdir(output_folder_path)):
             final_op = cv2.hconcat([orig_ref, sift_ref])
             video.write(final_op)
     video.release()
-    break

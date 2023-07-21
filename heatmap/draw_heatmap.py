@@ -76,7 +76,7 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
 
     cap = cv2.VideoCapture(video_file)
     while cap.isOpened():
-        if frame_no % 100 == 0 and frame_no > 1:
+        if frame_no % 100 == 0:
             print(f"Processed {frame_no} frames")
 
         frame_no += 1
@@ -95,10 +95,15 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
             gray_curr_frame = cv2.cvtColor(curr_frame.copy(), cv2.COLOR_BGR2GRAY)
             try:
                 ref_center = reference_gaze_point_mapper(
-                    ref_image_grey, gray_curr_frame, (x_pixel, y_pixel)
+                    gray_curr_frame, ref_image_grey, x_pixel, y_pixel
                 )
-            except:
+                
+                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_org_points.jpg', cv2.circle(np.copy(curr_frame), (x_pixel, y_pixel), 15, (255, 0, 0), 15))
+                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_new_points.jpg', cv2.circle(np.copy(ref_image), ref_center, 15, (255, 0, 0), 15))
+                
+            except Exception as ee:
                 print(f"Error in running SIFT for frame {frame_no}")
+                print(ee)
                 continue
 
             if ref_center == None:

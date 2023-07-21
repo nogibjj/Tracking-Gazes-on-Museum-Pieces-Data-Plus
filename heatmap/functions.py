@@ -67,295 +67,50 @@ def is_single_color(
 # a function
 
 
-def image_matcher(reference_frame, comparison_frame):
-    """Find the keypoints and descriptors with SIFT.
-
-    Original scripts considered reading the images in
-    grayscale and with cv2.imread"""
-
-    # Initiate SIFT detector
-    sift = cv2.SIFT_create()
-
-    # find the keypoints and descriptors with SIFT
-    kp1, des1 = sift.detectAndCompute(reference_frame, None)
-    kp2, des2 = sift.detectAndCompute(comparison_frame, None)
-
-    if kp1 == ():
-        print("Reference Frame has no features to detect")
-        return [], (), ()
-
-    if kp2 == ():
-        print("Comparision frame has no features to detect")
-        return [], (), ()
-
-    # BFMatcher with default params
-    bf = cv2.BFMatcher()
-    matches = bf.knnMatch(des1, des2, k=2)
-
-    return matches, kp1, kp2
-
-
-# choosing the best pairs guarantees the best accuracy
-# when mapping the gaze points from a random frame to
-# our reference image finder's best reference image
-
-
-def pair_generators(
-    distance_multiplier=0.1, gaze_point=None, matches=None, kp1=None, kp2=None
-):
-    """Generate the list of keypoint pairs.
-    These keypoints come from the SIFT algorithm output."""
-    good_pairs = []
-    for m, n in matches:
-        if m.distance < distance_multiplier * n.distance:
-            pt1 = kp1[m.queryIdx].pt
-            pt1 = (int(pt1[0]), int(pt1[1]))
-            pt2 = kp2[m.trainIdx].pt
-            pt2 = (int(pt2[0]), int(pt2[1]))
-
-            if pt1[0] == gaze_point[0] or pt2[0] == gaze_point[0]:
-                continue
-
-            elif pt1[1] == gaze_point[1] or pt2[1] == gaze_point[1]:
-                continue
-
-            good_pairs.append([pt1, pt2])
-
-    return good_pairs
-
-
-# loop function that finds you the ideal pair
-def ideal_pair(
-    dist_ranges=np.arange(0.05, 1.0, 0.05),
-    gaze_point=None,
-    matches=None,
-    kp1=None,
-    kp2=None,
-):
-    """Find the best pair for the gaze point.
-
-    It will stop once it finds at least 2 pairs."""
-
-    for value in dist_ranges:
-        pairs_list = pair_generators(
-            distance_multiplier=value,
-            gaze_point=gaze_point,
-            matches=matches,
-            kp1=kp1,
-            kp2=kp2,
-        )
-        pairs_list = list(set(tuple(sub) for sub in pairs_list))
-        if len(pairs_list) >= 2:
-            return pairs_list[0:2]
-
-        else:
-            pass
-
-    return None
-
-
-def keypoints_finder(
-    reference_frame=None,
-    comparison_frame=None,
-    gaze_point=None,
-    dist_ranges=np.arange(0.05, 1.0, 0.05),
-):
-    """Find the best two pairs of query and train points
-    for the gaze point.
-
-    This algorithm is meant to facilitate the mapping of the
-    comparison gaze point to the reference image's gaze point."""
-
-    matches, kp1, kp2 = image_matcher(
-        reference_frame=reference_frame, comparison_frame=comparison_frame
-    )
-    if matches == []:
-        return None
-
-    pairs_list = ideal_pair(
-        dist_ranges=dist_ranges,
-        gaze_point=gaze_point,
-        matches=matches,
-        kp1=kp1,
-        kp2=kp2,
-    )
-
-    if pairs_list is None:
-        return None
-
-    else:
-        return pairs_list
-
-
-# Geometric solution of the problem
-
+"""
+https://blog.francium.tech/feature-detection-and-matching-with-opencv-5fd2394a590
 
 """
-From this point onwards, two pairs of points are needed to solve the problem.
-The previous functions were designed to obtain two reference - comparison pairs of points.
-
-The reference image is the image on which we want to map the gaze point. 
-The comparison image is the image from which we want to map the gaze point.
-The gaze point is a point that is frame dependent.
-
-A coordinate in one frame may not be the same coordinate 
-in the reference image, because spatial changes may have
-taken place across time. 
-
-For example, one comparison frame may be more zoomed in
-when compared to the reference image, or it may be more
-translated to the right or left of the field of vision.
-
-For these reasons, we needed a scale invariant algorithm
-like SIFT to find common points across both images to
-then estimate the gaze point's location on the reference image
-by using the comparison points and gaze point
-from the comparison image.
-
-"""
-
-
-def slope_finder(comparison_point, gaze_point):
-    """Find the slope of the line that connects two points.
-
-    In this case, we want the slope of the line that connects
-    the gaze point and the comparison point."""
-
-    slope = (gaze_point[1] - comparison_point[1]) / (
-        gaze_point[0] - comparison_point[0]
-    )
-    return slope
-
-
-def intercept_finder(reference_point, comparison_slope):
-    """Find the intercept of the line that connects two points.
-
-    In this case, we want the intercept of the line that connects
-    the future gaze point to be mapped unto the reference image
-    and the reference point. We don't have the gaze point yet,
-    but we can estimate the lines intercept by using the
-    comparison slope and the reference point. Those two
-    lines will preserve the same relationship (slope) with
-    their gaze points."""
-
-    intercept = reference_point[1] - (comparison_slope * reference_point[0])
-    return intercept
-
-
-def slope_intercept_finder(reference_point, comparison_point, gaze_point):
-    """Find the slope and intercept of the line that connects two points.
-
-    The slope is obtained from the comparison point and the gaze point.
-
-    The intercept is obtained by using that slope and the reference point.
-
-    """
-
-    slope = slope_finder(comparison_point, gaze_point)
-    intercept = intercept_finder(reference_point, slope)
-
-    return slope, intercept
-
-
-# make a tuple from the slope and intercept
-
-
-def intersecting_point(slope_intercept_a, slope_intercept_b):
-    """Find the point at which two lines intersect.
-
-    The idea for solving this problem in a "coding friendly" way
-    comes from here :
-
-    https://www.cuemath.com/geometry/intersection-of-two-lines/
-
-    Arguments :
-
-    - slope_intercept_a :  a tuple containing the slope and intercept of the first reference point.
-
-    - slope_intercept_b :  a tuple containing the slope and intercept of the first reference point.
-
-    By obtaining the slopes and intercepts, we can effectively find
-    the reference gaze point."""
-
-    # First, identify the terms by using the standard form from the
-    # equations of these lines. We start with the assumption that we are
-    # converting the slope-intercept form of a line to standard form.
-    # This is why the coefficient for y will be -1.
-    # 0 = Ax + By + C
-
-    a_1 = slope_intercept_a[0]
-    b_1 = -1  # negative and constant because of conversion
-    c_1 = slope_intercept_a[1]
-
-    a_2 = slope_intercept_b[0]
-    b_2 = -1  # negative and constant because of conversion
-    c_2 = slope_intercept_b[1]
-
-    # terms
-    x0_t1 = b_1 * c_2 - b_2 * c_1
-    x0_t2 = a_1 * b_2 - a_2 * b_1
-    x0 = x0_t1 / x0_t2
-
-    y0_t1 = c_1 * a_2 - c_2 * a_1
-    y0_t2 = a_1 * b_2 - a_2 * b_1
-    y0 = y0_t1 / y0_t2
-
-    return x0, y0
-
 
 def reference_gaze_point_mapper(
-    reference_frame,
-    comparison_frame,
-    gaze_point,
-    # dist_ranges=np.arange(0.05, 1.0, 0.05),
-    dist_ranges=np.arange(0.0, 1.0, 0.01),
+    img1,
+    img2,
+    x_pixel, 
+    y_pixel
 ):
-    """Map the gaze point from the comparison image to the reference image.
+    gaze_point =  np.array([[x_pixel, y_pixel, 1]]).reshape(3, 1)
+    MIN_MATCHES = 5
 
-    This function uses the slopes and intercepts of the reference
-    and comparison points to map the comparison gaze point to
-    a reference gaze point.
-    """
+    orb = cv2.ORB_create(nfeatures=2500)
+    kp1, des1 = orb.detectAndCompute(img1, None)
+    kp2, des2 = orb.detectAndCompute(img2, None)
 
-    # find the paired reference and comparison points
-    # the size of the list is 2
-    best_pairs = keypoints_finder(
-        reference_frame, comparison_frame, gaze_point, dist_ranges=dist_ranges
-    )
+    index_params = dict(algorithm=6,
+                        table_number=6,
+                        key_size=12,
+                        multi_probe_level=2)
+    search_params = {}
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+    matches = flann.knnMatch(des1, des2, k=2)
 
-    pair_1_ref_pt = best_pairs[0][0]
-    pair_1_comparison_pt = best_pairs[0][1]
+    # As per Lowe's ratio test to filter good matches
+    good_matches = []
+    for m, n in matches:
+        if m.distance < 0.75 * n.distance:
+            good_matches.append(m)
 
-    pair_2_ref_pt = best_pairs[1][0]
-    pair_2_comparison_pt = best_pairs[1][1]
+    if len(good_matches) > MIN_MATCHES:
+        src_points = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        dst_points = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        m, mask = cv2.findHomography(src_points, dst_points, cv2.RANSAC, 5.0)
 
-    # find the slopes of the comparison lines that connect to
-    # the gaze point
-
-    slope_intercept_a = slope_intercept_finder(
-        pair_1_ref_pt, pair_1_comparison_pt, gaze_point
-    )
-
-    slope_intercept_b = slope_intercept_finder(
-        pair_2_ref_pt, pair_2_comparison_pt, gaze_point
-    )
-
-    # find the reference gaze point
-    reference_gaze_point = intersecting_point(slope_intercept_a, slope_intercept_b)
-
-    # assert (
-    #     reference_gaze_point[1]
-    #     == slope_intercept_a[0] * reference_gaze_point[0] + slope_intercept_a[1]
-    # )
-
-    # assert (
-    #     reference_gaze_point[1]
-    #     == slope_intercept_b[0] * reference_gaze_point[0] + slope_intercept_b[1]
-    # )
-
-    reference_gaze_point = (int(reference_gaze_point[0]), int(reference_gaze_point[1]))
-
-    return reference_gaze_point
+        transformed_pixel = np.dot(m, gaze_point)
+        transformed_x = round((transformed_pixel[0]/transformed_pixel[2])[0])
+        transformed_y = round((transformed_pixel[1]/transformed_pixel[2])[0])
+        return (transformed_x, transformed_y)
+    else:
+        print('No matches found')
+    return (None, None)
 
 
 def get_closest_individual_gaze_object(
