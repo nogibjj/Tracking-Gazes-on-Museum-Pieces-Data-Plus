@@ -97,9 +97,9 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
                 ref_center = reference_gaze_point_mapper(
                     gray_curr_frame, ref_image_grey, x_pixel, y_pixel
                 )
-                
-                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_org_points.jpg', cv2.circle(np.copy(curr_frame), (x_pixel, y_pixel), 15, (255, 0, 0), 15))
-                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_new_points.jpg', cv2.circle(np.copy(ref_image), ref_center, 15, (255, 0, 0), 15))
+                if frame_no % 250 == 0:
+                    cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_org_points.jpg', cv2.circle(np.copy(curr_frame), (x_pixel, y_pixel), 15, (255, 0, 0), 15))
+                    cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_new_points.jpg', cv2.circle(np.copy(ref_image), ref_center, 15, (255, 0, 0), 15))
                 
             except Exception as ee:
                 print(f"Error in running SIFT for frame {frame_no}")

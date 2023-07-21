@@ -69,7 +69,6 @@ def is_single_color(
 
 """
 https://blog.francium.tech/feature-detection-and-matching-with-opencv-5fd2394a590
-
 """
 
 def reference_gaze_point_mapper(
@@ -211,17 +210,17 @@ def save_outputs(
     """
     ### Write the outputs to the original data folder
     cv2.imwrite(
-        os.path.join(ROOT_PATH, f"reference_image_{name}_SIFT.png"), first_frame
+        os.path.join(ROOT_PATH, f"reference_image_{name}.png"), first_frame
     )
     cv2.imwrite(
         os.path.join(
             ROOT_PATH,
-            f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}_SIFT.png",
+            f"heatmap_output_{name}_{DETECT_BOUNDING_SIZE}.png",
         ),
         final_img,
     )
     updated_gaze.to_csv(
-        os.path.join(ROOT_PATH, f"updated_gaze_{name}_SIFT.csv"), index=False
+        os.path.join(ROOT_PATH, f"updated_gaze_{name}.csv"), index=False
     )
 
 # mse function for the reference image calculations
