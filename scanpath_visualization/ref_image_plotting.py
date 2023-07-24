@@ -19,15 +19,14 @@ except Exception as ee:
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
 
-data_folder_path = os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE)
 output_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE)
 ref_image = cv2.imread(
     os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
 )
 width, height = ref_image.shape[0], ref_image.shape[1]
 
-for index, folder in enumerate(os.listdir(data_folder_path)):
-    folder = os.path.join(data_folder_path, folder)
+for index, folder in enumerate(os.listdir(output_folder_path)):
+    folder = os.path.join(output_folder_path, folder)
     if not os.path.isdir(folder):
         continue
     print(f"Running for folder -- {folder}")
