@@ -14,3 +14,4 @@ python video_plotting.py $user
 cd ..
 cd tagging_tool
 python feature_tagger_deluxe.py
+
