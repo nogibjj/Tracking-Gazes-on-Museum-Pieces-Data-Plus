@@ -345,6 +345,11 @@ def reference_image_finder(
                 if is_single_color(frame, resize=resize_factor):
                     print("Frame is of one color. Skipping...")
                     continue
+                else:
+                    frame = cv2.resize(
+                        frame, resize_factor, interpolation=cv2.INTER_CUBIC
+                    )
+
             frame_number += 1
             frame_counter += 1
             temp_frame_dictionary_original[frame_number] = frame.copy()
