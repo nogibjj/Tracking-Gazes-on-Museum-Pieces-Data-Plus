@@ -1,6 +1,6 @@
 """
 Author: Aditya John (aj391), Eric Rios Soderman (ejr41)
-This script contains helper functions used by the draw_heatmap.py script
+This script contains helper functions used by the draw_heatmap.py script.
 """
 import sys
 import os
@@ -22,7 +22,10 @@ def is_single_color(
     maximum_robust is a flag that will not allow the function
     to resize the image. The tradeoff is maximum accuracy for
     slowest speed."""
-    if not (maximum_robust):
+    if maximum_robust:
+        cv2_array = input_cv2_array
+
+    else:
         # Other method is INTER_AREA
         cv2_array = cv2.resize(input_cv2_array, resize, interpolation=cv2.INTER_CUBIC)
 
@@ -215,9 +218,11 @@ def save_outputs(
 
 
 # mse function for the reference image calculations
-def mse(img1, img2):
+def mse(img1, img2, debug=False):
     """Mean squared error function for
     the image calculations."""
+    if debug:
+        print("img1 shape: ", img1.shape)
     h, w = img1.shape
     diff = cv2.subtract(img1, img2)
     err = np.sum(diff**2)
@@ -332,7 +337,9 @@ def reference_image_finder(
 
         if success:
             if debug:
-                is_single_color(frame, maximum_robust=True)
+                if is_single_color(frame, maximum_robust=True):
+                    print("Frame is of one color. Skipping...")
+                    continue
 
             else:
                 if is_single_color(frame, resize=resize_factor):
@@ -359,6 +366,19 @@ def reference_image_finder(
                 temp_frame_dictionary_original = dict()
                 frame_counter = 0
                 minute_frame_counter += 1
+                # if debug:
+                #     print(f"Debugging...best frame for bucket: {best_bucket_frame_num}")
+                #     print(
+                #         "The result of is single color :",
+                #         is_single_color(
+                #             frame_dictionary_original[best_bucket_frame_num],
+                #             maximum_robust=True,
+                #         ),
+                #     )
+                #     cv2.imshow("Best frame", best_bucket_frame)
+                #     key = cv2.waitKey(1)
+                #     if key == ord("0"):
+                #         break
 
             if frame_number == 150 and early_stop is True:
                 return frame
@@ -459,4 +479,4 @@ def reference_image_finder(
 
     print(f"Obtained best frame for video : {reference_frame_num}")
 
-    return reference_frame_original, reference_frame_gray
+    return reference_frame_original, reference_frame_gray, reference_frame_num
