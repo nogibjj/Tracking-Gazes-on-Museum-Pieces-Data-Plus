@@ -647,7 +647,7 @@ plt.title("Saccade Frequency by Gender")
 plt.suptitle("")
 plt.show()
 
-"""# Figuring out the participants who don't have a fixation id
+# Checking for fixations in participants who don't have registered fixation IDs
 gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
 gaze_null.drop("row_number", axis=1, inplace=True)
 
@@ -658,103 +658,4 @@ qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] 
 qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
 qualify["angle(r)"] = qualify.apply(
     lambda x: math.atan2(x.change_y, x.change_x), axis=1
-)"""
-
-"""# Fixation duration with demographic data
-fix_dur_men = analysis_men[["participant_folder", "mean fix duration(s)", "age group"]]
-fix_dur_men["age group"] = fix_dur_men["age group"].astype(str)
-
-fix_dur_women = analysis_women[
-    ["participant_folder", "mean fix duration(s)", "age group"]
-]
-fix_dur_women["age group"] = fix_dur_women["age group"].astype(str)
-
-age1m = fix_dur_men[fix_dur_men["age group"] == "(16.0, 25.0]"]
-age2m = fix_dur_men[fix_dur_men["age group"] == "(25.0, 32.0]"]
-age3m = fix_dur_men[fix_dur_men["age group"] == "(32.0, 40.0]"]
-age4m = fix_dur_men[fix_dur_men["age group"] == "(40.0, 48.0]"]
-
-age1w = fix_dur_women[fix_dur_women["age group"] == "(16.0, 25.0]"]
-age2w = fix_dur_women[fix_dur_women["age group"] == "(25.0, 32.0]"]
-age3w = fix_dur_women[fix_dur_women["age group"] == "(32.0, 40.0]"]
-age4w = fix_dur_women[fix_dur_women["age group"] == "(40.0, 48.0]"]
-age5w = fix_dur_women[fix_dur_women["age group"] == "(55.0, 63.0]"]
-
-# Duration t test
-group1 = scipy.stats.ttest_ind(
-    age1m["mean fix duration(s)"].dropna(), age1w["mean fix duration(s)"].dropna()
 )
-group2 = scipy.stats.ttest_ind(
-    age2m["mean fix duration(s)"].dropna(), age2w["mean fix duration(s)"].dropna()
-)
-group3 = scipy.stats.ttest_ind(
-    age3m["mean fix duration(s)"].dropna(), age3w["mean fix duration(s)"].dropna()
-)
-group4 = scipy.stats.ttest_ind(
-    age4m["mean fix duration(s)"].dropna(), age4w["mean fix duration(s)"].dropna()
-)
-
-age_dur_t = [group1, group2, group3, group4]
-age_dur_t = pd.DataFrame(age_dur_t)
-age_dur_t.index = ["(16.0, 25.0]", "(25.0, 32.0]", "(32.0, 40.0]", "(40.0, 48.0]"]
-
-
-def convert_pvalue_to_asterisks(pvalue):
-    if pvalue <= 0.0001:
-        return "****"
-    elif pvalue <= 0.001:
-        return "***"
-    elif pvalue <= 0.01:
-        return "**"
-    elif pvalue <= 0.05:
-        return "*"
-    return "ns"
-
-
-age_dur_asterisks = age_dur_t["pvalue"].apply(convert_pvalue_to_asterisks)
-
-# Fixation duration errorbar plot
-fix_dur_men_plot = (
-    fix_dur_men.groupby("age group")["mean fix duration(s)"].mean().to_frame()
-)
-fix_dur_men_plot.dropna(inplace=True)
-fix_dur_men_plot["sem"] = fix_dur_men.groupby("age group")["mean fix duration(s)"].sem()
-fix_dur_men_plot["sem"].fillna(0, inplace=True)
-
-fix_dur_women_plot = (
-    fix_dur_women.groupby("age group")["mean fix duration(s)"].mean().to_frame()
-)
-fix_dur_women_plot.dropna(inplace=True)
-fix_dur_women_plot["sem"] = fix_dur_women.groupby("age group")[
-    "mean fix duration(s)"
-].sem()
-fix_dur_women_plot["sem"].fillna(0, inplace=True)
-
-plt.errorbar(
-    fix_dur_men_plot.index,
-    fix_dur_men_plot["mean fix duration(s)"],
-    yerr=fix_dur_men_plot["sem"],
-    capsize=4,
-    color="blue",
-    label="men",
-)
-
-plt.errorbar(
-    fix_dur_women_plot.index,
-    fix_dur_women_plot["mean fix duration(s)"],
-    yerr=fix_dur_women_plot["sem"],
-    capsize=4,
-    color="red",
-    label="women",
-)
-
-plt.text(0, 0.94, "ns", ha="center")
-plt.text(1, 0.57, "ns", ha="center")
-plt.text(2, 0.51, "ns", ha="center")
-plt.text(3, 0.62, "*", ha="center")
-
-plt.legend()
-plt.xlabel("Age Group")
-plt.ylabel("Fixation Duration (s)")
-plt.title("Fixation Duration by Gender and Age")
-plt.show()"""
