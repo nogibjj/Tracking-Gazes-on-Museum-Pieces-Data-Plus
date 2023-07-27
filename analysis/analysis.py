@@ -18,7 +18,8 @@ from collections import Counter
 import scipy
 from config.config import *
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 plt.style.use("ggplot")
 
 
@@ -29,6 +30,7 @@ try:
 except:
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
+
 
 # Groupby function
 def modify(df):
@@ -49,8 +51,10 @@ output_plots_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE, 
 if not os.path.exists(output_plots_folder_path):
     os.makedirs(output_plots_folder_path)
 
-all_gaze = pd.read_csv(os.path.join(output_folder_path, 'all_gaze.csv'), compression='gzip')
-demographic = pd.read_excel(os.path.join(output_folder_path, 'demographic.xlsx'))
+all_gaze = pd.read_csv(
+    os.path.join(output_folder_path, "all_gaze.csv"), compression="gzip"
+)
+demographic = pd.read_excel(os.path.join(output_folder_path, "demographic.xlsx"))
 all_gaze.reset_index(drop=True, inplace=True)
 
 
@@ -83,15 +87,15 @@ all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
 demographic = demographic[
     [
         "School or degree course",
-        "Age",
-        "Educational Qualification",
-        "sesso",
-        "codice_eyetr_museo",
+        "age",
+        "education",
+        "gender",
+        "participant_folder",
     ]
 ]
 
 gaze_copy = pd.merge(
-    all_gaze, demographic, left_on="participant_folder", right_on="codice_eyetr_museo"
+    all_gaze, demographic, left_on="participant_folder", right_on="participant_folder"
 )
 
 gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
@@ -120,9 +124,11 @@ yes_fixations = fixation_count[fixation_count["fixation id"] != 0].reset_index()
 usable_participants = yes_fixations.loc[:, "participant_folder"].to_list()
 
 if len(null_participants) > 0:
-    print(f"There are {len(null_participants)} participants that do not have any fixations.")
+    print(
+        f"There are {len(null_participants)} participants that do not have any fixations."
+    )
     if not os.path.exists("quality_control/usable_participants"):
-        os.makedirs('quality_control/usable_participants')
+        os.makedirs("quality_control/usable_participants")
 
     with open("quality_control/usable_participants/error_participants.txt", "w") as f:
         f.write(
@@ -458,90 +464,87 @@ plt.show()
 # Add demographic data to analysis dataframe
 analysis = pd.merge(
     analysis,
-    demographic[
-        [
-            "School or degree course",
-            "Age",
-            "Educational Qualification",
-            "sesso",
-            "codice_eyetr_museo",
-        ]
-    ],
+    demographic,
     left_on="participant_folder",
-    right_on="codice_eyetr_museo",
+    right_on="participant_folder",
     how="left",
 )
-analysis.drop("codice_eyetr_museo", axis=1, inplace=True)
-analysis.sort_values("Age", inplace=True)
+analysis.sort_values("age", inplace=True)
 analysis["age group"] = pd.cut(
-    analysis["Age"], bins=6, right=True, precision=0, include_lowest=True
+    analysis["age"], bins=6, right=True, precision=0, include_lowest=True
 )
 
-analysis_men = analysis[analysis["sesso"] == "m"]
-analysis_women = analysis[analysis["sesso"] == "f"]
+analysis_men = analysis[analysis["gender"] == "m"]
+analysis_women = analysis[analysis["gender"] == "f"]
 
 # Fixation duration with demographic data
 fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_dur_edu = analysis.groupby("Educational Qualification")[
-    "mean fix duration(s)"
-].mean()
-fix_dur_gender = analysis.groupby("sesso")["mean fix duration(s)"].mean()
+fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
+fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
 
 # Fixation frequency with demographic data
 fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
-fix_per_sec_edu = analysis.groupby("Educational Qualification")["fixation freq"].mean()
-fix_per_sec_gender = analysis.groupby("sesso")["fixation freq"].mean()
+fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
+fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
 
 # First fixation duration with demographic data
 first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
-first_fix_dur_edu = analysis.groupby("Educational Qualification")[
-    "first fix time"
-].mean()
-first_fix_dur_gender = analysis.groupby("sesso")["first fix time"].mean()
+first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
+first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
 
 # Last fixation duration with demographic data
 last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
-last_fix_dur_edu = analysis.groupby("Educational Qualification")["last fix time"].mean()
-last_fix_dur_gender = analysis.groupby("sesso")["last fix time"].mean()
+last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
+last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
 
 # Saccade duration with demographic data
 sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
-sac_dur_edu = analysis.groupby("Educational Qualification")[
-    "mean sac duration(s)"
-].mean()
-sac_dur_gender = analysis.groupby("sesso")["mean sac duration(s)"].mean()
+sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
+sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
 
 # Saccade distance with demographic data
 sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
-sac_dist_edu = analysis.groupby("Educational Qualification")["mean sac distance"].mean()
-sac_dist_gender = analysis.groupby("sesso")["mean sac distance"].mean()
+sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
+sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
 
 # Saccade frequency with demographic data
 sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
-sac_per_sec_edu = analysis.groupby("Educational Qualification")["saccade freq"].mean()
-sac_per_sec_gender = analysis.groupby("sesso")["saccade freq"].mean()
+sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
+sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
 
 # Demographic visualizations (boxplots)
 # Fixation duration
 
-vars_list = [['mean fix duration(s)', 'age group'], ["mean fix duration(s)", "Educational Qualification"], 
-             ["mean fix duration(s)", "sesso"], ["first fix time", "age group"], 
-             ["first fix time", "Educational Qualification"], ["first fix time", "sesso"], 
-             ["last fix time", "age group"], ["last fix time", "Educational Qualification"], 
-             ["last fix time", "sesso"], ["fixation freq", 'age group'], 
-             ["fixation freq", "Educational Qualification"], ["fixation freq", "sesso"], 
-             ["mean sac duration(s)", "age group"], ["mean sac duration(s)", "Educational Qualification"], 
-             ["mean sac duration(s)", "sesso"], ["mean sac distance", "age group"], 
-             ["mean sac distance", "Educational Qualification"], ["mean sac distance", "sesso"], 
-             ["saccade freq", "age group"], ["saccade freq", "Educational Qualification"], 
-             ["saccade freq", "sesso"]]
+vars_list = [
+    ["mean fix duration(s)", "age group"],
+    ["mean fix duration(s)", "education"],
+    ["mean fix duration(s)", "gender"],
+    ["first fix time", "age group"],
+    ["first fix time", "education"],
+    ["first fix time", "gender"],
+    ["last fix time", "age group"],
+    ["last fix time", "education"],
+    ["last fix time", "gender"],
+    ["fixation freq", "age group"],
+    ["fixation freq", "education"],
+    ["fixation freq", "gender"],
+    ["mean sac duration(s)", "age group"],
+    ["mean sac duration(s)", "education"],
+    ["mean sac duration(s)", "gender"],
+    ["mean sac distance", "age group"],
+    ["mean sac distance", "education"],
+    ["mean sac distance", "gender"],
+    ["saccade freq", "age group"],
+    ["saccade freq", "education"],
+    ["saccade freq", "gender"],
+]
 
 
 for vars in vars_list:
     analysis.boxplot(column=vars[0], by=vars[1])
     plt.xlabel(vars[0])
     plt.ylabel(vars[1])
-    plt.title("Fixation Duration by Age")
+    plt.title(f"Plotting {vars[0]} by {vars[1]}")
     plt.suptitle("")
     path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
     plt.savefig(path)
