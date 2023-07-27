@@ -20,8 +20,7 @@ from config.config import *
 # Set env variables based on config file
 try:
     env = sys.argv[1]
-    # env_var = eval(env + "_config")
-    env_var = eval("eric" + "_config")
+    env_var = eval(env + "_config")
 except:
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
