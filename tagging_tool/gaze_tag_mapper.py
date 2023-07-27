@@ -46,7 +46,7 @@ user_tag_coordinates = pd.read_csv(tag_file_path)
 if not os.path.exists(output_folder_path):
     os.makedirs(output_folder_path)
 
-for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
+for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
     print(f"Starting folder {index} : {folder}")
     files = os.listdir(folder)
     participant_id = folder.split(os.sep)[-1]  # get the participant id
