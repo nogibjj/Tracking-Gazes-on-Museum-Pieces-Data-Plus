@@ -47,8 +47,8 @@ if not os.path.exists(QC_output_path):
 for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     print("#" * 50)
     print(f"Extracting Reference Frame from folder {index} -- {folder}")
-    if index != 2:
-        continue
+    # if index != 2:
+    #     continue
     ### Set the required variables for this loop run
     start_time = time.time()
     frame_no = 0

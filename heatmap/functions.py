@@ -300,28 +300,6 @@ def best_frame_finder(
         return best_frame, best_frame_num
 
 
-def exact_frame_finder(video_path: str, frame_target: int):
-    """Finds the exact frame in a video."""
-
-    cap = cv2.VideoCapture(video_path)
-    frame_no = 0
-
-    while cap.isOpened():
-        success, frame = cap.read()
-
-        if success:
-            frame_no += 1
-
-            if frame_no == frame_target:
-                original_frame = frame.copy()
-                break
-
-    cv2.destroyAllWindows()
-    cap.release()
-
-    return original_frame
-
-
 def reference_image_finder(
     video_path: str, buckets=30, early_stop=False, resize_factor=(500, 500), debug=False
 ):
@@ -369,11 +347,12 @@ def reference_image_finder(
                 if is_single_color(frame, resize=resize_factor):
                     print("Frame is of one color. Skipping...")
                     continue
-                else:
-                    frame = cv2.resize(
-                        frame, resize_factor, interpolation=cv2.INTER_CUBIC
-                    )  # INTER_AREA is another option
+                # else:
+                #     frame = cv2.resize(
+                #         frame, resize_factor, interpolation=cv2.INTER_CUBIC
+                #     )  # INTER_AREA is another option
 
+            # frame_number += 1
             frame_counter += 1
             temp_frame_dictionary_original[frame_number] = frame.copy()
             gray_frame = cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2GRAY)
@@ -509,22 +488,4 @@ def reference_image_finder(
 
     del frame_number
 
-    if debug:
-        return reference_frame_original, reference_frame_gray, reference_frame_num
-
-    else:
-        # video = cv2.VideoCapture(video_path)
-        # video.set(cv2.CAP_PROP_POS_FRAMES, reference_frame_num)
-        # _, reference_frame_full_size = video.read()
-        # reference_frame_full_size = reference_frame_full_size.copy()
-        # cv2.destroyAllWindows()
-        # video.release()
-        reference_frame_full_size = exact_frame_finder(video_path, reference_frame_num)
-        reference_frame_gray_full_size = cv2.cvtColor(
-            reference_frame_full_size.copy(), cv2.COLOR_BGR2GRAY
-        )
-        return (
-            reference_frame_full_size,
-            reference_frame_gray_full_size,
-            reference_frame_num,
-        )
+    return reference_frame_original, reference_frame_gray, reference_frame_num

@@ -23,7 +23,6 @@ from functions import (
     normalize_heatmap_dict,
     draw_heatmap_on_ref_img,
     save_outputs,
-    reference_image_finder,
     reference_gaze_point_mapper,
     is_single_color,
 )
