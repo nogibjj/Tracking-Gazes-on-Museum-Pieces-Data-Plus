@@ -403,19 +403,20 @@ first_tag = pd.concat([tagid.first()])
 first_tag.reset_index(inplace=True)
 first_tag = first_tag[["participant_folder", "tag", "time elapsed(s)"]]
 
-# Figuring out the participants who don't have a fixation id
-gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
-gaze_null.drop("row_number", axis=1, inplace=True)
-
-qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
-qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
-qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
-qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
-qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
-qualify["angle(r)"] = qualify.apply(
-    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+# Visualizations (boxplot)
+# Time spent on each feature
+tag_time = (
+    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
+    .sum()
+    .to_frame()
+    .reset_index()
 )
-
+tag_time.boxplot(column="gaze duration(s)", by="tag", vert=False)
+plt.xlabel("Duration (s)")
+plt.ylabel("Feature")
+plt.title("Fixation Duration by Feature (All Participants)")
+plt.suptitle("")
+plt.show()
 
 # Demographics
 # Add demographic data to analysis dataframe
@@ -443,19 +444,72 @@ analysis["age group"] = pd.cut(
 analysis_men = analysis[analysis["sesso"] == "m"]
 analysis_women = analysis[analysis["sesso"] == "f"]
 
-# Fixation means with demographic data
-fix_mean_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_mean_edu = analysis.groupby("Educational Qualification")[
+# Fixation duration with demographic data
+fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
+fix_dur_edu = analysis.groupby("Educational Qualification")[
     "mean fix duration(s)"
 ].mean()
-fix_mean_gender = analysis.groupby("sesso")["mean fix duration(s)"].mean()
+fix_dur_gender = analysis.groupby("sesso")["mean fix duration(s)"].mean()
 
-# Fixation frequency per second with demographic data
+# Fixation frequency with demographic data
 fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
 fix_per_sec_edu = analysis.groupby("Educational Qualification")["fixation freq"].mean()
 fix_per_sec_gender = analysis.groupby("sesso")["fixation freq"].mean()
 
-# Fixation frequency boxplot
+# First fixation duration with demographic data
+first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
+first_fix_dur_edu = analysis.groupby("Educational Qualification")[
+    "first fix time"
+].mean()
+first_fix_dur_gender = analysis.groupby("sesso")["first fix time"].mean()
+
+# Last fixation duration with demographic data
+last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
+last_fix_dur_edu = analysis.groupby("Educational Qualification")["last fix time"].mean()
+last_fix_dur_gender = analysis.groupby("sesso")["last fix time"].mean()
+
+# Saccade duration with demographic data
+sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
+sac_dur_edu = analysis.groupby("Educational Qualification")[
+    "mean sac duration(s)"
+].mean()
+sac_dur_gender = analysis.groupby("sesso")["mean sac duration(s)"].mean()
+
+# Saccade distance with demographic data
+sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
+sac_dist_edu = analysis.groupby("Educational Qualification")["mean sac distance"].mean()
+sac_dist_gender = analysis.groupby("sesso")["mean sac distance"].mean()
+
+# Saccade frequency with demographic data
+sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
+sac_per_sec_edu = analysis.groupby("Educational Qualification")["saccade freq"].mean()
+sac_per_sec_gender = analysis.groupby("sesso")["saccade freq"].mean()
+
+# Demographic visualizations (boxplots)
+# Fixation duration
+analysis.boxplot(column="mean fix duration(s)", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Duration (s)")
+plt.title("Fixation Duration by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean fix duration(s)", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Duration (s)")
+plt.title("Fixation Duration by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean fix duration(s)", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Duration (s)")
+plt.title("Fixation Duration by Gender")
+plt.suptitle("")
+plt.show()
+
+# Fixation frequency
 analysis.boxplot(column="fixation freq", by="age group")
 plt.xlabel("Age Group")
 plt.ylabel("Frequency per second")
@@ -463,21 +517,148 @@ plt.title("Fixation Frequency by Age")
 plt.suptitle("")
 plt.show()
 
-# Time spent on each feature
-tag_time = (
-    gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
-    .sum()
-    .to_frame()
-    .reset_index()
-)
-
-# Time spent on each feature boxplot
-tag_time.boxplot(column="gaze duration(s)", by="tag", vert=False)
-plt.xlabel("Duration (s)")
-plt.ylabel("Feature")
-plt.title("Fixation Duration by Feature (All Participants)")
+analysis.boxplot(column="fixation freq", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Education")
 plt.suptitle("")
 plt.show()
+
+analysis.boxplot(column="fixation freq", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Gender")
+plt.suptitle("")
+plt.show()
+
+# First fixation duration
+analysis.boxplot(column="first fix time", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Duration (s)")
+plt.title("First Fixation Duration by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="first fix time", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Duration (s)")
+plt.title("First Fixation Duration by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="first fix time", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Duration (s)")
+plt.title("First Fixation Duration by Gender")
+plt.suptitle("")
+plt.show()
+
+# Last fixation duration
+analysis.boxplot(column="last fix time", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Duration (s)")
+plt.title("Last Fixation Duration by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="last fix time", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Duration (s)")
+plt.title("Last Fixation Duration by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="last fix time", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Duration (s)")
+plt.title("Last Fixation Duration by Gender")
+plt.suptitle("")
+plt.show()
+
+# Saccade duration
+analysis.boxplot(column="mean sac duration(s)", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Duration (s)")
+plt.title("Saccade Duration by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean sac duration(s)", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Duration (s)")
+plt.title("Saccade Duration by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean sac duration(s)", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Duration (s)")
+plt.title("Saccade Duration by Gender")
+plt.suptitle("")
+plt.show()
+
+# Saccade distance
+analysis.boxplot(column="mean sac distance", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Distance (px)")
+plt.title("Saccade Distance by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean sac distance", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Distance (px)")
+plt.title("Saccade Distance by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="mean sac distance", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Distance (px)")
+plt.title("Saccade Distance by Gender")
+plt.suptitle("")
+plt.show()
+
+# Saccade frequency
+analysis.boxplot(column="saccade freq", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Frequency per second")
+plt.title("Saccade Frequency by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="saccade freq", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Frequency per second")
+plt.title("Saccade Frequency by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="saccade freq", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Frequency per second")
+plt.title("Saccade Frequency by Gender")
+plt.suptitle("")
+plt.show()
+
+"""# Figuring out the participants who don't have a fixation id
+gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+gaze_null.drop("row_number", axis=1, inplace=True)
+
+qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
+qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+qualify["angle(r)"] = qualify.apply(
+    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+)"""
 
 """# Fixation duration with demographic data
 fix_dur_men = analysis_men[["participant_folder", "mean fix duration(s)", "age group"]]
