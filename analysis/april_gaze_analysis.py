@@ -681,3 +681,16 @@ plt.ylabel("Frequency per second")
 plt.title("Saccade Frequency by Gender")
 plt.suptitle("")
 plt.show()
+
+# Checking for fixations in participants who don't have registered fixation IDs
+gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+gaze_null.drop("row_number", axis=1, inplace=True)
+
+qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
+qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+qualify["angle(r)"] = qualify.apply(
+    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+)
