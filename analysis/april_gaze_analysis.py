@@ -1,5 +1,13 @@
 """This script describe statistics of when/where people are looking"""
 
+
+import sys
+import os
+
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# prepend parent directory to the system path:
+sys.path.insert(0, path)
+
 import pandas as pd
 import datetime as dt
 import numpy as np
@@ -8,8 +16,19 @@ import math
 import collections
 from collections import Counter
 import scipy
+from config.config import *
 
 plt.style.use("ggplot")
+
+
+# Set env variables based on config file
+try:
+    env = sys.argv[1]
+    # env_var = eval(env + "_config")
+    env_var = eval("april" + "_config")
+except:
+    print("Enter valid env variable. Refer to classes in the config.py file")
+    sys.exit()
 
 
 # Groupby function
@@ -25,10 +44,12 @@ def modify(df):
     return df
 
 
-import sys
+output_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE)
+output_plots_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE, "plots")
 
-sys.path.insert(0, "..")
-print(sys.path)
+if not os.path.exists(output_plots_folder_path):
+    os.makedirs(output_plots_folder_path)
+
 all_gaze = pd.read_csv(
     "../data/truscan_couple_statue/all_gaze_truscan.csv", compression="gzip"
 )
@@ -98,6 +119,20 @@ gaze_copy.reset_index(drop=True, inplace=True)
 fixation_count = gaze_copy.groupby("participant_folder")["fixation id"].sum().to_frame()
 no_fixations = fixation_count[fixation_count["fixation id"] == 0].reset_index()
 null_participants = no_fixations.loc[:, "participant_folder"].to_list()
+yes_fixations = fixation_count[fixation_count["fixation id"] != 0].reset_index()
+usable_participants = yes_fixations.loc[:, "participant_folder"].to_list()
+
+if len(null_participants) > 0:
+    with open("quality_control/usable_participants/error_participants.txt", "w") as f:
+        f.write(
+            "These are the list of participants in the final csv without fixations:"
+        )
+        for participant in null_participants:
+            f.write(participant + "\n")
+
+        f.write("The number of participants with usable data")
+
+
 gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 gaze_fixed["time elapsed(s)"] = gaze_fixed.groupby("participant_folder")[
     "duration"
@@ -509,29 +544,6 @@ plt.title("Fixation Duration by Gender")
 plt.suptitle("")
 plt.show()
 
-# Fixation frequency
-analysis.boxplot(column="fixation freq", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="fixation freq", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="fixation freq", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Gender")
-plt.suptitle("")
-plt.show()
-
 # First fixation duration
 analysis.boxplot(column="first fix time", by="age group")
 plt.xlabel("Age Group")
@@ -575,6 +587,29 @@ analysis.boxplot(column="last fix time", by="sesso")
 plt.xlabel("Gender")
 plt.ylabel("Duration (s)")
 plt.title("Last Fixation Duration by Gender")
+plt.suptitle("")
+plt.show()
+
+# Fixation frequency
+analysis.boxplot(column="fixation freq", by="age group")
+plt.xlabel("Age Group")
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Age")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="fixation freq", by="Educational Qualification")
+plt.xlabel("Education")
+plt.xticks(rotation=90)
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Education")
+plt.suptitle("")
+plt.show()
+
+analysis.boxplot(column="fixation freq", by="sesso")
+plt.xlabel("Gender")
+plt.ylabel("Frequency per second")
+plt.title("Fixation Frequency by Gender")
 plt.suptitle("")
 plt.show()
 
@@ -646,16 +681,3 @@ plt.ylabel("Frequency per second")
 plt.title("Saccade Frequency by Gender")
 plt.suptitle("")
 plt.show()
-
-# Checking for fixations in participants who don't have registered fixation IDs
-gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
-gaze_null.drop("row_number", axis=1, inplace=True)
-
-qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
-qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
-qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
-qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
-qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
-qualify["angle(r)"] = qualify.apply(
-    lambda x: math.atan2(x.change_y, x.change_x), axis=1
-)
