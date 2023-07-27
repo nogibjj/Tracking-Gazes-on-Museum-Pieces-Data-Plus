@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 from functions import (
     reference_image_finder,
-    is_single_color,
+    best_frame_finder,
 )
 from config.config import *
 
@@ -33,7 +33,9 @@ data_folder_path = os.path.join(
 output_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE)
 
 reference_frame_dict = dict()
+reference_frame_gray_dict = dict()
 
+script_start_time = time.time()
 for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     print("#" * 50)
     print(f"Extracting Reference Frame from folder {index} -- {folder}")
@@ -54,12 +56,11 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     video_file = os.path.join(participant_folder, "*.mp4")
     video_file = glob.glob(video_file)[0]
 
-    if not (env_var.REFERENCE_IMAGE):
-        print(os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png"))
-
+    if env_var.REFERENCE_IMAGE:
         ref_image = cv2.imread(
             os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
         )
+
         print("Existing reference image found.")
 
         sys.exit()
@@ -78,46 +79,42 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
         for factor in resize_factor:
             if factor_found:
                 continue
-            new_height = frame_height * factor
+            new_height = int(frame_height * factor)
 
             # if this condition does not trigger
             # then the resolution of the video
             # is substantially larger than 4K
             if 200 < new_height < 500:
-                new_width = frame_width * factor
+                new_width = int(frame_width * factor)
                 factor_found = True
                 break
 
-        ref_image, ref_image_grey = reference_image_finder(
+        ref_image, ref_image_grey, ref_num = reference_image_finder(
             video_file,
             buckets=fps,
             early_stop=False,
             resize_factor=(new_width, new_height),
+            debug=False,
         )
         print("Reference image extracted from video.")
 
         reference_frame_dict[index] = ref_image
+        reference_frame_gray_dict[index] = ref_image_grey
 
-    # pixel_heatmap = defaultdict(int)
+# choose the best frame
 
-    # normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-    # final_img = draw_heatmap_on_ref_img(
-    #     pixel_heatmap, np.copy(ref_image), env_var.DRAW_BOUNDING_SIZE
-    # )
+final_reference_frame_gray, final_reference_frame_num = best_frame_finder(
+    reference_frame_gray_dict, list(reference_frame_gray_dict.keys())
+)
 
-    # cap.release()
+final_reference_frame_color = reference_frame_dict[final_reference_frame_num]
 
-    # output_path = os.path.join(output_folder_path, name)
-    # if not os.path.exists(output_path):
-    #     os.makedirs(output_path)
+cv2.imwrite(
+    os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png"),
+    final_reference_frame_color,
+)
 
-    # save_outputs(
-    #     output_path,
-    #     name,
-    #     ref_image,
-    #     env_var.DETECT_BOUNDING_SIZE,
-    #     final_img,
-    #     updated_gaze,
-    # )
-    end = time.time()
-    print(f"Time taken for {folder} is {end - start_time}")
+script_end_time = time.time()
+print(
+    f"Total time taken for the entire script is {script_end_time - script_start_time}"
+)

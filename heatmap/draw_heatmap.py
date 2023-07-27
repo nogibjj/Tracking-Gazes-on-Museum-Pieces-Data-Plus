@@ -23,7 +23,6 @@ from functions import (
     normalize_heatmap_dict,
     draw_heatmap_on_ref_img,
     save_outputs,
-    reference_image_finder,
     reference_gaze_point_mapper,
     is_single_color,
 )
@@ -59,20 +58,17 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
     csv_file = os.path.join(folder, "gaze.csv")
     gaze_df = pd.read_csv(csv_file)
     gaze_df = convert_timestamp_ns_to_ms(gaze_df)
-    
+
     if not glob.glob(os.path.join(folder, "*.mp4")):
         continue
     video_file = os.path.join(folder, "*.mp4")
-    video_file = glob.glob(video_file)[0]    
+    video_file = glob.glob(video_file)[0]
 
-    if env_var.REFERENCE_IMAGE:
-        ref_image = cv2.imread(os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, 'reference_image.png'))
-        ref_image_grey = cv2.cvtColor(ref_image, cv2.COLOR_BGR2GRAY)
-        print("Existing reference image found.")
-    
-    else:
-        ref_image, ref_image_grey = reference_image_finder(video_file, early_stop=False)
-        print("Reference image found from video.")
+    ref_image = cv2.imread(
+        os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
+    )
+    ref_image_grey = cv2.cvtColor(ref_image, cv2.COLOR_BGR2GRAY)
+    print("Existing reference image found.")
 
     cap = cv2.VideoCapture(video_file)
     while cap.isOpened():
@@ -86,8 +82,14 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
             if is_single_color(curr_frame):
                 continue
 
-            gaze_object_crop, closest_row, x_pixel, y_pixel= get_closest_individual_gaze_object(
-                cap, curr_frame, gaze_df, env_var.DETECT_BOUNDING_SIZE)
+            (
+                gaze_object_crop,
+                closest_row,
+                x_pixel,
+                y_pixel,
+            ) = get_closest_individual_gaze_object(
+                cap, curr_frame, gaze_df, env_var.DETECT_BOUNDING_SIZE
+            )
 
             if not gaze_object_crop.any() or closest_row.empty:
                 continue
@@ -97,10 +99,18 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
                 ref_center = reference_gaze_point_mapper(
                     gray_curr_frame, ref_image_grey, x_pixel, y_pixel
                 )
-                
-                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_org_points.jpg', cv2.circle(np.copy(curr_frame), (x_pixel, y_pixel), 15, (255, 0, 0), 15))
-                cv2.imwrite(f'qc_heatmap/{name}_{frame_no}_new_points.jpg', cv2.circle(np.copy(ref_image), ref_center, 15, (255, 0, 0), 15))
-                
+
+                cv2.imwrite(
+                    f"qc_heatmap/{name}_{frame_no}_org_points.jpg",
+                    cv2.circle(
+                        np.copy(curr_frame), (x_pixel, y_pixel), 15, (255, 0, 0), 15
+                    ),
+                )
+                cv2.imwrite(
+                    f"qc_heatmap/{name}_{frame_no}_new_points.jpg",
+                    cv2.circle(np.copy(ref_image), ref_center, 15, (255, 0, 0), 15),
+                )
+
             except Exception as ee:
                 print(f"Error in running SIFT for frame {frame_no}")
                 print(ee)
@@ -119,21 +129,22 @@ for index, folder in enumerate(os.listdir(data_folder_path)):
 
     normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
     final_img = draw_heatmap_on_ref_img(
-        pixel_heatmap, np.copy(ref_image), env_var.DRAW_BOUNDING_SIZE)
+        pixel_heatmap, np.copy(ref_image), env_var.DRAW_BOUNDING_SIZE
+    )
 
     cap.release()
 
     output_path = os.path.join(output_folder_path, name)
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    
+
     save_outputs(
         output_path,
         name,
         ref_image,
         env_var.DETECT_BOUNDING_SIZE,
         final_img,
-        updated_gaze
+        updated_gaze,
     )
     end = time.time()
     print(f"Time taken for {name} is {end - start_time}")

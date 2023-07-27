@@ -1,180 +1,123 @@
-import numpy as np
+"""This is a script to tag the features in the image. 
+
+The script will save the coordinates of the features in a csv file.
+
+Author: Eric Rios-Soderman"""
+
+import os
+from tag_event_functions import drawfunction
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
-import copy
-import gc
-import math
+import datetime as dt
+import sys
 
-user_tag_coordinates = pd.read_csv("tags.csv")
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, path)
 
-# assuming a group reference image
-# or a participant reference image
-# is received, this code should work agnostically
+from config.config import *
 
-# test
-# participant_reference_gaze_csv = pd.read_csv("test reference gaze updated.csv")
-participant_reference_gaze_csv = pd.read_csv("gaze_csv_tag_exp_sb.csv")
-
-
-def ref_coordinate_processing(gaze_reference_df):
-    gaze_reference_df["ref_coordinates"] = pd.Series(
-        zip(gaze_reference_df["ref_x_pixel"], gaze_reference_df["ref_y_pixel"])
-    )
-
-    x_coordinates_from_tuple = [
-        i[0] for i in gaze_reference_df["ref_coordinates"].values.tolist()
-    ]
-
-    y_coordinates_from_tuple = [
-        i[1] for i in gaze_reference_df["ref_coordinates"].values.tolist()
-    ]
-
-    assert gaze_reference_df["ref_x_pixel"].values.tolist() == x_coordinates_from_tuple
-
-    assert gaze_reference_df["ref_y_pixel"].values.tolist() == y_coordinates_from_tuple
-
-    return gaze_reference_df
+# print(" Made it past imports")
+# Set env variables based on config file
+try:
+    env = sys.argv[1]
+    env_var = eval(env + "_config")
+except:
+    print("Enter valid env variable. Refer to classes in the config.py file")
+    sys.exit()
 
 
-def coordinate_parser(tuple_string):
-    """Parse a string tuple into a list of integers.
+# the path will be the same, regardless if supplied or generated
+data_folder_path = os.path.join(
+    env_var.ROOT_PATH, env_var.ART_PIECE
+)  # all the participant folders are here
 
-    The tuple must be composed of coordinates.
-
-    Example input: '(1,2)'
-
-    Example output: [1,2]"""
-
-    import re
-
-    # remove the parentheses
-
-    parsed_tuple = re.findall(pattern="\((\d+), (\d+)\)", string=tuple_string)[0]
-
-    formatted_tuple = [int(i) for i in parsed_tuple]
-
-    return formatted_tuple
-
-
-def gaze_tagger(gaze_reference_df_obs, tags_df):
-    """Tag the observation gaze with the feature"""
-
-    # tag_list_from_df = user_tag_coordinates.values.tolist()
-
-    # observation from that updated gaze csv
-    # obtained and parsed from ref_coordinates
-
-    # obs_x = gaze_reference_df_obs["ref_coordinates"][0]
-    # obs_y = gaze_reference_df_obs["ref_coordinates"][1]
-    # print(gaze_reference_df_obs, gaze_reference_df_obs[0])
-    obs_x, obs_y = gaze_reference_df_obs[0], gaze_reference_df_obs[1]
-
-    # extracting the features for the following loop operation
-
-    features = [i for i in tags_df["name"].unique()]
-
-    name = "noise"
-
-    smallest_center_x, smallest_center_y = None, None
-
-    distance_from_center = None
-
-    for feature in features:
-        # the coordinates here are the
-        # points of the rectangle encapsulated
-        # by the user's bounding in the
-        # tagging_event.py script
-
-        # upper left corner
-        p1 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x1,y1)"
-        ].values.tolist()
-        x1, y1 = coordinate_parser(p1[0])
-
-        # lower right corner
-        p2 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x2,y2)"
-        ].values.tolist()
-        x2, y2 = coordinate_parser(p2[0])
-
-        # lower left corner
-        p3 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x3,y3)"
-        ].values.tolist()
-        x3, y3 = coordinate_parser(p3[0])
-
-        # upper right corner
-        p4 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x4,y4)"
-        ].values.tolist()
-        x4, y4 = coordinate_parser(p4[0])
-
-        center = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(center_x,center_y)"
-        ].values.tolist()
-        center_x, center_y = coordinate_parser(center[0])
-
-        # the if statements to check if the observation gaze
-        # is within the bounds of the rectangle
-
-        if (
-            (obs_x >= x1 and obs_y <= y1)
-            and (obs_x <= x2 and obs_y >= y2)
-            and (obs_x >= x3 and obs_y >= y3)
-            and (obs_x <= x4 and obs_y <= y4)
-        ):
-            if (
-                name != "noise"
-                and smallest_center_x != None
-                and smallest_center_y != None
-                and distance_from_center != None
-            ):
-                # if the observation gaze is within the bounds
-                # of two or more rectangles, the one with the
-                # smallest center is chosen
-                # print("current gaze", obs_x, obs_y)
-                # print("current name : ", name)
-                # print("current center : ", smallest_center_x, smallest_center_y)
-                # print("current distance : ", distance_from_center)
-                # print("competing name : ", feature)
-                # print("competing center : ", center_x, center_y)
-                # print(
-                #     "competing distance : ",
-                #     math.dist((obs_x, obs_y), (center_x, center_y)),
-                # )
-                if (
-                    math.dist((obs_x, obs_y), (center_x, center_y))
-                    < distance_from_center
-                ):
-                    name = copy.deepcopy(feature)
-
-                    smallest_center_x, smallest_center_y = copy.deepcopy(
-                        center_x
-                    ), copy.deepcopy(center_y)
-
-                    # print("new name : ", name)
-                    # print("new center : ", smallest_center_x, smallest_center_y)
-
-            else:
-                name = copy.deepcopy(feature)
-
-                smallest_center_x, smallest_center_y = copy.deepcopy(
-                    center_x
-                ), copy.deepcopy(center_y)
-
-                distance_from_center = math.dist((obs_x, obs_y), (center_x, center_y))
-
-    gc.collect()
-
-    return name
-
-
-participant_reference_gaze_csv = ref_coordinate_processing(
-    participant_reference_gaze_csv
+reference_image = cv2.imread(
+    os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
 )
 
+output_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE)
 
-participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
-    "ref_coordinates"
-].apply(lambda x: gaze_tagger(x, user_tag_coordinates))
+if not os.path.exists(output_folder_path):
+    os.makedirs(output_folder_path)
+
+
+feature_coordinates = []
+drawing = True
+flag = True
+
+param = [reference_image, feature_coordinates]
+
+img = reference_image
+reset_img = img.copy()
+
+# get the resolution of the image
+height, width, channels = img.shape
+print(f"width: {width}, height: {height}, channels: {channels}")
+
+cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
+cv2.resizeWindow("image", width, height)
+
+cv2.setMouseCallback("image", drawfunction, param)
+
+while flag:
+    cv2.imshow("image", img)
+    key = cv2.waitKey(1)
+    if key == ord("0"):
+        break
+
+    elif key == ord("5"):
+        cv2.destroyAllWindows()
+        img = reset_img.copy()
+        print("You have reset the image")
+        cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("image", width, height)
+        cv2.setMouseCallback("image", drawfunction, param)
+
+    elif key == ord("9"):
+        flag = False
+        print("You have finished tagging")
+
+cv2.destroyAllWindows()
+
+coordinates_df = pd.DataFrame(
+    feature_coordinates,
+    columns=[
+        "name",
+        "(x1,y1)",
+        "(x2,y2)",
+        "(x3,y3)",
+        "(x4,y4)",
+        "(center_x,center_y)",
+    ],
+)
+
+assert [i[0] for i in coordinates_df["(x1,y1)"]] == [
+    i[0] for i in coordinates_df["(x3,y3)"]
+]
+assert [i[0] for i in coordinates_df["(x2,y2)"]] == [
+    i[0] for i in coordinates_df["(x4,y4)"]
+]
+assert [i[1] for i in coordinates_df["(x1,y1)"]] == [
+    i[1] for i in coordinates_df["(x4,y4)"]
+]
+assert [i[1] for i in coordinates_df["(x2,y2)"]] == [
+    i[1] for i in coordinates_df["(x3,y3)"]
+]
+
+print("assertions passed")
+print(coordinates_df.head())
+
+# current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+print(f"Saving the tag coordinates csv file")
+# coordinates_df.to_csv(
+#     os.path.join(output_folder_path, f"tags_coordinates_{current_time}.csv"),
+#     index=False,
+# )
+coordinates_df.to_csv(
+    os.path.join(output_folder_path, "tags_coordinates.csv"),
+    index=False,
+)
+
+print(f"Finished generating tags")
