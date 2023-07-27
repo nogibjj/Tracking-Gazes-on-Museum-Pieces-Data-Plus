@@ -47,7 +47,8 @@ if not os.path.exists(QC_output_path):
 for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     print("#" * 50)
     print(f"Extracting Reference Frame from folder {index} -- {folder}")
-
+    if index != 2:
+        continue
     ### Set the required variables for this loop run
     start_time = time.time()
     frame_no = 0
@@ -140,7 +141,10 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
 
     except AssertionError:
         print("The greyscale images are not the same")
-        error_log.append(index)
+        print("The reference frame number is not the same")
+        print("The index of the non-robust image is: ", ref_num)
+        print("The index of the robust image is: ", ref_num_robust)
+        error_log.append([index, folder])
 
     cv2.imwrite(
         os.path.join(QC_output_path, f"ref_image_{index}_robust_{ref_num_robust}.png"),
@@ -160,24 +164,3 @@ with open(
 
 print("Total time taken: ", time.time() - script_start_time)
 print("Error log: ", error_log)
-# pixel_heatmap = defaultdict(int)
-
-# normalized_heatmap_dict = normalize_heatmap_dict(pixel_heatmap)
-# final_img = draw_heatmap_on_ref_img(
-#     pixel_heatmap, np.copy(ref_image), env_var.DRAW_BOUNDING_SIZE
-# )
-
-# cap.release()
-
-# output_path = os.path.join(output_folder_path, name)
-# if not os.path.exists(output_path):
-#     os.makedirs(output_path)
-
-# save_outputs(
-#     output_path,
-#     name,
-#     ref_image,
-#     env_var.DETECT_BOUNDING_SIZE,
-#     final_img,
-#     updated_gaze,
-# )
