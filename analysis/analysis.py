@@ -474,47 +474,34 @@ analysis["age group"] = pd.cut(
     analysis["age"], bins=6, right=True, precision=0, include_lowest=True
 )
 
-analysis_men = analysis[analysis["gender"] == "m"]
-analysis_women = analysis[analysis["gender"] == "f"]
-
-# Fixation duration with demographic data
+# Age
 fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
-fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
-
-# Fixation frequency with demographic data
 fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
-fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
-fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
-
-# First fixation duration with demographic data
 first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
-first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
-first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
-
-# Last fixation duration with demographic data
 last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
-last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
-last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
-
-# Saccade duration with demographic data
 sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
-sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
-sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
-
-# Saccade distance with demographic data
 sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
-sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
-sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
-
-# Saccade frequency with demographic data
 sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
+
+# Education
+fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
+fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
+first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
+last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
+sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
+sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
 sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
+
+# Gender
+fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
+fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
+first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
+last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
+sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
+sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
 sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
 
 # Demographic visualizations (boxplots)
-# Fixation duration
-
 vars_list = [
     ["mean fix duration(s)", "age group"],
     ["mean fix duration(s)", "education"],
