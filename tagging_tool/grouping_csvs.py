@@ -112,5 +112,7 @@ except AssertionError:
         f.write(f"Participants without gaze csvs : {no_gaze_csv}")
 
 # change to all gaze for final implementation
-target_csv.to_csv("data/all_gaze.csv", index=False, compression="gzip")
+target_csv.to_csv(
+    os.path.join(output_folder_path, "all_gaze.csv"), index=False, compression="gzip"
+)
 print("all_gaze.csv created")
