@@ -2,25 +2,29 @@
 
 read -p 'Enter the user whose configuration needs to be used for the script: ' user
 
-
-# Run heatmap code
+# Create the reference image and tag it
 cd heatmap
+python reference_image_creator.py $user
+cd ../tagging_tool
+python feature_tagger.py $user
+
+# Create heatmaps and map the data from video to reference image
+cd ../heatmap
 python draw_heatmap.py $user
 
-
-### Run scanpath visualizations
-cd ..
-cd scanpath_visualization
+# Run the Scanpath Visualisations
+cd ../scanpath_visualization
 python ref_image_plotting.py $user
 python video_plotting.py $user
 
+### Run tag
+cd ../tagging_tool
+python gaze_tag_mapper.py $user
 
-### Run tagger
-cd ..
-cd tagging_tool
-python feature_tagger_deluxe.py $user
+# Run grouper
+python grouping_csvs.py $user
 
-### Run grouper
-
-### Run analysis script
+# Run analysis script
+cd ../analysis
+python analysis.py $user
 
