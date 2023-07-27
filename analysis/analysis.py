@@ -17,19 +17,18 @@ import collections
 from collections import Counter
 import scipy
 from config.config import *
-
+import warnings
+warnings.filterwarnings('ignore')
 plt.style.use("ggplot")
 
 
 # Set env variables based on config file
 try:
     env = sys.argv[1]
-    # env_var = eval(env + "_config")
-    env_var = eval("april" + "_config")
+    env_var = eval(env + "_config")
 except:
     print("Enter valid env variable. Refer to classes in the config.py file")
     sys.exit()
-
 
 # Groupby function
 def modify(df):
@@ -50,10 +49,8 @@ output_plots_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE, 
 if not os.path.exists(output_plots_folder_path):
     os.makedirs(output_plots_folder_path)
 
-all_gaze = pd.read_csv(
-    "../data/truscan_couple_statue/all_gaze_truscan.csv", compression="gzip"
-)
-
+all_gaze = pd.read_csv(os.path.join(output_folder_path, 'all_gaze.csv'), compression='gzip')
+demographic = pd.read_excel(os.path.join(output_folder_path, 'demographic.xlsx'))
 all_gaze.reset_index(drop=True, inplace=True)
 
 
@@ -82,7 +79,7 @@ all_gaze["tag"] = all_gaze["tag"].map(mapping)
 
 all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
 
-demographic = pd.read_excel("../data/truscan_couple_statue/demographic.xlsx")
+
 demographic = demographic[
     [
         "School or degree course",
@@ -123,6 +120,10 @@ yes_fixations = fixation_count[fixation_count["fixation id"] != 0].reset_index()
 usable_participants = yes_fixations.loc[:, "participant_folder"].to_list()
 
 if len(null_participants) > 0:
+    print(f"There are {len(null_participants)} participants that do not have any fixations.")
+    if not os.path.exists("quality_control/usable_participants"):
+        os.makedirs('quality_control/usable_participants')
+
     with open("quality_control/usable_participants/error_participants.txt", "w") as f:
         f.write(
             "These are the list of participants in the final csv without fixations:"
@@ -522,165 +523,28 @@ sac_per_sec_gender = analysis.groupby("sesso")["saccade freq"].mean()
 
 # Demographic visualizations (boxplots)
 # Fixation duration
-analysis.boxplot(column="mean fix duration(s)", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Duration (s)")
-plt.title("Fixation Duration by Age")
-plt.suptitle("")
-plt.show()
 
-analysis.boxplot(column="mean fix duration(s)", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Duration (s)")
-plt.title("Fixation Duration by Education")
-plt.suptitle("")
-plt.show()
+vars_list = [['mean fix duration(s)', 'age group'], ["mean fix duration(s)", "Educational Qualification"], 
+             ["mean fix duration(s)", "sesso"], ["first fix time", "age group"], 
+             ["first fix time", "Educational Qualification"], ["first fix time", "sesso"], 
+             ["last fix time", "age group"], ["last fix time", "Educational Qualification"], 
+             ["last fix time", "sesso"], ["fixation freq", 'age group'], 
+             ["fixation freq", "Educational Qualification"], ["fixation freq", "sesso"], 
+             ["mean sac duration(s)", "age group"], ["mean sac duration(s)", "Educational Qualification"], 
+             ["mean sac duration(s)", "sesso"], ["mean sac distance", "age group"], 
+             ["mean sac distance", "Educational Qualification"], ["mean sac distance", "sesso"], 
+             ["saccade freq", "age group"], ["saccade freq", "Educational Qualification"], 
+             ["saccade freq", "sesso"]]
 
-analysis.boxplot(column="mean fix duration(s)", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Duration (s)")
-plt.title("Fixation Duration by Gender")
-plt.suptitle("")
-plt.show()
 
-# First fixation duration
-analysis.boxplot(column="first fix time", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Duration (s)")
-plt.title("First Fixation Duration by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="first fix time", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Duration (s)")
-plt.title("First Fixation Duration by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="first fix time", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Duration (s)")
-plt.title("First Fixation Duration by Gender")
-plt.suptitle("")
-plt.show()
-
-# Last fixation duration
-analysis.boxplot(column="last fix time", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Duration (s)")
-plt.title("Last Fixation Duration by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="last fix time", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Duration (s)")
-plt.title("Last Fixation Duration by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="last fix time", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Duration (s)")
-plt.title("Last Fixation Duration by Gender")
-plt.suptitle("")
-plt.show()
-
-# Fixation frequency
-analysis.boxplot(column="fixation freq", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="fixation freq", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="fixation freq", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Frequency per second")
-plt.title("Fixation Frequency by Gender")
-plt.suptitle("")
-plt.show()
-
-# Saccade duration
-analysis.boxplot(column="mean sac duration(s)", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Duration (s)")
-plt.title("Saccade Duration by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="mean sac duration(s)", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Duration (s)")
-plt.title("Saccade Duration by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="mean sac duration(s)", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Duration (s)")
-plt.title("Saccade Duration by Gender")
-plt.suptitle("")
-plt.show()
-
-# Saccade distance
-analysis.boxplot(column="mean sac distance", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Distance (px)")
-plt.title("Saccade Distance by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="mean sac distance", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Distance (px)")
-plt.title("Saccade Distance by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="mean sac distance", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Distance (px)")
-plt.title("Saccade Distance by Gender")
-plt.suptitle("")
-plt.show()
-
-# Saccade frequency
-analysis.boxplot(column="saccade freq", by="age group")
-plt.xlabel("Age Group")
-plt.ylabel("Frequency per second")
-plt.title("Saccade Frequency by Age")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="saccade freq", by="Educational Qualification")
-plt.xlabel("Education")
-plt.xticks(rotation=90)
-plt.ylabel("Frequency per second")
-plt.title("Saccade Frequency by Education")
-plt.suptitle("")
-plt.show()
-
-analysis.boxplot(column="saccade freq", by="sesso")
-plt.xlabel("Gender")
-plt.ylabel("Frequency per second")
-plt.title("Saccade Frequency by Gender")
-plt.suptitle("")
-plt.show()
+for vars in vars_list:
+    analysis.boxplot(column=vars[0], by=vars[1])
+    plt.xlabel(vars[0])
+    plt.ylabel(vars[1])
+    plt.title("Fixation Duration by Age")
+    plt.suptitle("")
+    path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
+    plt.savefig(path)
 
 # Checking for fixations in participants who don't have registered fixation IDs
 gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]

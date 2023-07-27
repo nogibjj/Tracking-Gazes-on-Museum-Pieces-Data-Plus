@@ -163,3 +163,5 @@ cython_debug/
 output/
 
 heatmap/qc_heatmap
+
+error_participants.txt
