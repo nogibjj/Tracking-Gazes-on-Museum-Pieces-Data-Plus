@@ -25,5 +25,5 @@ class eric_config(base_class):
 
 
 class april_config(base_class):
-    ROOT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)"
-    OUTPUT_PATH = "/Users/aprilzuo/Downloads/eye tracking data from the museum in Rome (Pupil Invisible)/output"
+    ROOT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_data"
+    OUTPUT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_output"
