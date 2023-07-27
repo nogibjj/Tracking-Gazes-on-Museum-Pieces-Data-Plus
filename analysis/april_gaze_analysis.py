@@ -479,20 +479,6 @@ plt.title("Fixation Duration by Feature (All Participants)")
 plt.suptitle("")
 plt.show()
 
-"""# Sarcophagus vs Vulci plots
-comparison_couple = analysis[['participant_folder', 'mean fix duration(s)']]
-comparison_couple['artifact'] = 'Sarcophagus of the Spouses'
-comparison_vulci = analysis_vts[['participant_folder', 'mean fix duration(s)']]
-comparison = pd.concat([comparison_couple, comparison_vulci])
-comparison['artifact'].fillna('Vulci Dig Site', inplace=True)
-
-comparison.boxplot(column='mean fix duration(s)', by='artifact')
-plt.xlabel("Artifact")
-plt.ylabel("Distance (px)")
-plt.title("Sarcophagus vs Dig Site: Participant Fixation Duration")
-plt.suptitle("")
-plt.show()"""
-
 """# Fixation duration with demographic data
 fix_dur_men = analysis_men[["participant_folder", "mean fix duration(s)", "age group"]]
 fix_dur_men["age group"] = fix_dur_men["age group"].astype(str)
@@ -580,17 +566,6 @@ plt.errorbar(
     color="red",
     label="women",
 )
-
-plt.text(0.2, 0.62, "10", ha="center")
-plt.text(1.1, 0.52, "2", ha="center")
-plt.text(2, 0.45, "1", ha="center")
-plt.text(3, 0.57, "1", ha="center")
-
-plt.text(0, 0.43, "12", ha="center")
-plt.text(1, 0.43, "7", ha="center")
-plt.text(2, 0.345, "1", ha="center")
-plt.text(3, 0.35, "2", ha="center")
-plt.text(4, 0.57, "1", ha="center")
 
 plt.text(0, 0.94, "ns", ha="center")
 plt.text(1, 0.57, "ns", ha="center")
