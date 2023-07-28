@@ -12,10 +12,10 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import math
 import collections
 from collections import Counter
-import scipy
 from config.config import *
 import warnings
 
@@ -451,6 +451,8 @@ first_tag.reset_index(inplace=True)
 first_tag = first_tag[["participant_folder", "tag", "time elapsed(s)"]]
 
 # Visualizations (boxplot)
+plt.style.use("ggplot")
+
 # Time spent on each feature
 tag_time = (
     gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
@@ -543,6 +545,59 @@ for vars in vars_list:
     plt.suptitle("")
     path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
     plt.savefig(path)
+
+# Grouped boxplots
+# Fixation duration
+sns.boxplot(
+    x=analysis["age group"], y=analysis["mean fix duration(s)"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["mean fix duration(s)"], hue=analysis["gender"]
+)
+
+# First fixation duration
+sns.boxplot(
+    x=analysis["age group"], y=analysis["first fix time"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["first fix time"], hue=analysis["gender"]
+)
+
+# Last fixation duration
+sns.boxplot(
+    x=analysis["age group"], y=analysis["last fix time"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["last fix time"], hue=analysis["gender"]
+)
+
+# Fixation frequency
+sns.boxplot(
+    x=analysis["age group"], y=analysis["fixation freq"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["fixation freq"], hue=analysis["gender"]
+)
+
+# Saccade duration
+sns.boxplot(
+    x=analysis["age group"], y=analysis["mean sac duration(s)"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["mean sac duration(s)"], hue=analysis["gender"]
+)
+
+# Saccade distance
+sns.boxplot(
+    x=analysis["age group"], y=analysis["mean sac distance"], hue=analysis["gender"]
+)
+sns.boxplot(
+    x=analysis["education"], y=analysis["mean sac distance"], hue=analysis["gender"]
+)
+
+# Saccade frequency
+sns.boxplot(x=analysis["age group"], y=analysis["saccade freq"], hue=analysis["gender"])
+sns.boxplot(x=analysis["education"], y=analysis["saccade freq"], hue=analysis["gender"])
 
 # Checking for fixations in participants who don't have registered fixation IDs
 gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
