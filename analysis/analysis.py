@@ -132,12 +132,17 @@ if len(null_participants) > 0:
 
     with open("quality_control/usable_participants/error_participants.txt", "w") as f:
         f.write(
-            "These are the list of participants in the final csv without fixations:"
+            "These are the list of participants in the final csv without fixations: \n"
         )
         for participant in null_participants:
             f.write(participant + "\n")
 
-        f.write("The number of participants with usable data")
+        f.write(
+            "The number of participants with usable fixation data, as determined by pupil"
+        )
+
+        for participant in usable_participants:
+            f.write(participant + "\n")
 
 
 gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]

@@ -110,14 +110,9 @@ def coordinate_parser(tuple_string):
 def gaze_tagger(gaze_reference_df_obs, tags_df):
     """Tag the observation gaze with the feature"""
 
-    # tag_list_from_df = user_tag_coordinates.values.tolist()
-
     # observation from that updated gaze csv
     # obtained and parsed from ref_coordinates
 
-    # obs_x = gaze_reference_df_obs["ref_coordinates"][0]
-    # obs_y = gaze_reference_df_obs["ref_coordinates"][1]
-    # print(gaze_reference_df_obs, gaze_reference_df_obs[0])
     obs_x, obs_y = gaze_reference_df_obs[0], gaze_reference_df_obs[1]
 
     # extracting the features for the following loop operation
@@ -137,31 +132,23 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
         # tagging_event.py script
 
         # upper left corner
-        p1 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x1,y1)"
-        ].values.tolist()
+        p1 = tags_df.loc[tags_df["name"] == feature, "(x1,y1)"].values.tolist()
         x1, y1 = coordinate_parser(p1[0])
 
         # lower right corner
-        p2 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x2,y2)"
-        ].values.tolist()
+        p2 = tags_df.loc[tags_df["name"] == feature, "(x2,y2)"].values.tolist()
         x2, y2 = coordinate_parser(p2[0])
 
         # lower left corner
-        p3 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x3,y3)"
-        ].values.tolist()
+        p3 = tags_df.loc[tags_df["name"] == feature, "(x3,y3)"].values.tolist()
         x3, y3 = coordinate_parser(p3[0])
 
         # upper right corner
-        p4 = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(x4,y4)"
-        ].values.tolist()
+        p4 = tags_df.loc[tags_df["name"] == feature, "(x4,y4)"].values.tolist()
         x4, y4 = coordinate_parser(p4[0])
 
-        center = user_tag_coordinates.loc[
-            user_tag_coordinates["name"] == feature, "(center_x,center_y)"
+        center = tags_df.loc[
+            tags_df["name"] == feature, "(center_x,center_y)"
         ].values.tolist()
         center_x, center_y = coordinate_parser(center[0])
 
@@ -183,16 +170,7 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                 # if the observation gaze is within the bounds
                 # of two or more rectangles, the one with the
                 # smallest center is chosen
-                # print("current gaze", obs_x, obs_y)
-                # print("current name : ", name)
-                # print("current center : ", smallest_center_x, smallest_center_y)
-                # print("current distance : ", distance_from_center)
-                # print("competing name : ", feature)
-                # print("competing center : ", center_x, center_y)
-                # print(
-                #     "competing distance : ",
-                #     math.dist((obs_x, obs_y), (center_x, center_y)),
-                # )
+
                 if (
                     math.dist((obs_x, obs_y), (center_x, center_y))
                     < distance_from_center

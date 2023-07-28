@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import array as arr
 
 
 def is_single_color(
@@ -489,3 +490,112 @@ def reference_image_finder(
     del frame_number
 
     return reference_frame_original, reference_frame_gray, reference_frame_num
+
+
+def test_reference_image_finder(video_path: str, sample_size: float = 0.05):
+    """Validate if the selected frame from a given video is better than a sample of frames from that video.
+
+    The sample can be small or it can be all the frames of the video.
+
+    The metric of comparison is MSE, mean squared error."""
+
+    cap = cv2.VideoCapture(video_path)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    cap.release()
+
+    # preserve the aspect ratio
+    resize_factor = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
+    factor_found = False
+
+    for factor in resize_factor:
+        if factor_found:
+            continue
+        new_height = int(frame_height * factor)
+
+        # if this condition does not trigger
+        # then the resolution of the video
+        # is substantially larger than 4K
+        if 200 < new_height < 500:
+            new_width = int(frame_width * factor)
+            factor_found = True
+            break
+    print(
+        "Finished finding the resize factor. Now using the reference image finder function..."
+    )
+    _, ref_gray, _ = reference_image_finder(
+        video_path, buckets=fps, early_stop=False, resize_factor=(new_width, new_height)
+    )
+    print("Finished using the reference image finder function.")
+    cap = cv2.VideoCapture(video_path)
+    usable_frame_list = arr.array("i", [])
+    frame_no = 0
+    while cap.isOpened():
+        success, frame = cap.read()
+
+        if success:
+            frame_no += 1
+
+            if is_single_color(frame, maximum_robust=True):
+                print("Frame is of one color. Skipping...")
+                continue
+
+            else:
+                usable_frame_list.extend([frame_no])
+
+        else:
+            break
+
+    cv2.destroyAllWindows()
+    cap.release()
+
+    usable_frame_total = len(usable_frame_list)
+    test_frames_number = int(usable_frame_total * sample_size)
+    test_frame_chosen = set(
+        np.random.choice(usable_frame_list, size=test_frames_number, replace=False)
+    )
+    del usable_frame_list
+    # test_frame_dictionary_original = dict()
+    test_frame_dictionary_gray = dict()
+    cap = cv2.VideoCapture(video_path)
+    frame_number = 0
+
+    print(
+        f"Now testing reference frame against {sample_size*100}% of the video frames..."
+    )
+    print(f"Total number of usable frames in the video: {usable_frame_total}")
+    print(f"Total number of frames chosen for testing: {test_frames_number}")
+
+    while cap.isOpened():
+        success, frame = cap.read()
+
+        if success:
+            frame_number += 1
+
+            if frame_number in test_frame_chosen:
+                # test_frame_dictionary_original[frame_number] = frame.copy()
+                test_frame_gray = cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2GRAY)
+                test_frame_dictionary_gray[frame_number] = test_frame_gray.copy()
+
+            else:
+                continue
+
+        else:
+            break
+
+    cv2.destroyAllWindows()
+    cap.release()
+
+    del test_frame_chosen
+
+    test_frame_dictionary_gray[-1] = ref_gray.copy()
+
+    best_frame, best_frame_num = best_frame_finder(
+        test_frame_dictionary_gray, list(test_frame_dictionary_gray.keys())
+    )
+
+    assert best_frame_num == -1, "The reference frame is not the best frame."
+    assert best_frame == ref_gray, "The reference frame is not the best frame."
+
+    print("The reference frame is the best frame.")

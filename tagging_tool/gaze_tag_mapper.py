@@ -21,8 +21,7 @@ from tag_event_functions import (
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-# from config.config import *
-from config import *
+from config.config import *
 
 # print(" Made it past imports")
 # Set env variables based on config file
@@ -48,9 +47,11 @@ if not os.path.exists(output_folder_path):
 
 for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
     print(f"Starting folder {index} : {folder}")
-    files = os.listdir(folder)
+    files = os.listdir(os.path.join(output_folder_path, folder))
     participant_id = folder.split(os.sep)[-1]  # get the participant id
     # print(files)
+    if index != 32:
+        continue
     file_found = False
     for file in files:
         if "updated_gaze" in file and ".csv" in file:  # add participant as condition
@@ -73,7 +74,7 @@ for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
     participant_output_path = os.path.join(output_folder_path, folder)
     # participant_reference_gaze_csv.to_csv(participant_output_path, f"final_gaze_tagged_{participant_id}_{current_time}.csv")
     participant_reference_gaze_csv.to_csv(
-        participant_output_path, "final_gaze_tagged.csv"
+        os.path.join(participant_output_path, "final_gaze_tagged.csv")
     )
 
     del participant_reference_gaze_csv

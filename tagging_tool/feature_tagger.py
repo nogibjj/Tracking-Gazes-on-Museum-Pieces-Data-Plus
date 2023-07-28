@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
 import sys
+import copy
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
@@ -49,7 +50,7 @@ flag = True
 param = [reference_image, feature_coordinates]
 
 img = reference_image
-reset_img = img.copy()
+reset_img = copy.deepcopy(reference_image)
 
 # get the resolution of the image
 height, width, channels = img.shape
@@ -68,10 +69,12 @@ while flag:
 
     elif key == ord("5"):
         cv2.destroyAllWindows()
-        img = reset_img.copy()
+        img = copy.deepcopy(reset_img)
         print("You have reset the image")
         cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
         cv2.resizeWindow("image", width, height)
+        feature_coordinates = []
+        param = [img, feature_coordinates]
         cv2.setMouseCallback("image", drawfunction, param)
 
     elif key == ord("9"):
