@@ -16,8 +16,8 @@ import sys
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
-# from config.config import *
-from config import *
+from config.config import *
+
 
 # print(" Made it past imports")
 # Set env variables based on config file
@@ -58,11 +58,17 @@ for folder in sorted(os.listdir(data_folder_path)):
 
 ideal_rows = 0
 participant_count = 0
-for folder in sorted(os.listdir(data_folder_path)):
-    files = os.listdir(folder)
+for folder in sorted(os.listdir(output_folder_path)):
+    try:
+        files = os.listdir(os.path.join(output_folder_path, folder))
+    except:
+        print(f"{folder} is not a folder")
+        continue
     participant_id = folder.split(os.sep)[-1]
 
-    gaze_csv_path = os.path.join(folder, "final_gaze_tagged.csv")
+    gaze_csv_path = os.path.join(
+        os.path.join(output_folder_path, folder), "final_gaze_tagged.csv"
+    )
 
     try:
         gaze_csv = pd.read_csv(gaze_csv_path)
