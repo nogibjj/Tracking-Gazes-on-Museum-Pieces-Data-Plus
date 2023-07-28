@@ -492,10 +492,15 @@ def reference_image_finder(
     return reference_frame_original, reference_frame_gray, reference_frame_num
 
 
-def test_reference_image_finder(video_path: str, sample_size: float = 0.05):
+def test_reference_image_finder(video_path: str, sample_size: float = 0.5):
     """Validate if the selected frame from a given video is better than a sample of frames from that video.
 
     The sample can be small or it can be all the frames of the video.
+
+    This function has its drawbacks due to the nature of choosing a best frame.
+
+    It is simply the frame that is most similar to all frames, which won't
+    necessarily extend to some subgroups of frames from the video.
 
     The metric of comparison is MSE, mean squared error."""
 
@@ -594,8 +599,9 @@ def test_reference_image_finder(video_path: str, sample_size: float = 0.05):
     best_frame, best_frame_num = best_frame_finder(
         test_frame_dictionary_gray, list(test_frame_dictionary_gray.keys())
     )
-
+    comparison = mse(best_frame, ref_gray)
+    print(f"The MSE between the best frame and the reference frame is {comparison}")
     assert best_frame_num == -1, "The reference frame is not the best frame."
-    assert best_frame == ref_gray, "The reference frame is not the best frame."
+    assert mse(best_frame, ref_gray) == 0, "The reference frame is not the best frame."
 
     print("The reference frame is the best frame.")

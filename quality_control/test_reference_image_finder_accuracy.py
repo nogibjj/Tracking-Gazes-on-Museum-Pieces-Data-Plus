@@ -41,8 +41,8 @@ start_time = time.time()
 for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     print("#" * 50)
     print(f"Extracting Reference Frame from folder {index} -- {folder}")
-    # if index != 2:
-    #     continue
+    if index != 2:
+        continue
     ### Set the required variables for this loop run
     participant_folder = os.path.join(data_folder_path, folder)
 
@@ -58,7 +58,7 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     video_file = glob.glob(video_file)[0]
 
     check_start_time = time.time()
-    test_reference_image_finder(video_file, 0.05)
+    test_reference_image_finder(video_file, 1)
     check_end_time = time.time()
     print(
         f"Time taken for check: {check_end_time - check_start_time} seconds for {participant_folder}"

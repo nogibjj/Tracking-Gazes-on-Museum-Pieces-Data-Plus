@@ -47,15 +47,19 @@ if not os.path.exists(output_folder_path):
 
 for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
     print(f"Starting folder {index} : {folder}")
-    files = os.listdir(os.path.join(output_folder_path, folder))
+    try:
+        files = os.listdir(os.path.join(output_folder_path, folder))
+    except:
+        print(f"{folder} is not a folder")
+        continue
     participant_id = folder.split(os.sep)[-1]  # get the participant id
     # print(files)
-    if index != 32:
-        continue
+    # if index != 32:
+    #     continue
     file_found = False
     for file in files:
         if "updated_gaze" in file and ".csv" in file:  # add participant as condition
-            updated_gaze_path = os.path.join(data_folder_path, folder, file)
+            updated_gaze_path = os.path.join(output_folder_path, folder, file)
             participant_reference_gaze_csv = pd.read_csv(updated_gaze_path)
             file_found = True
 
