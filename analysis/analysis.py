@@ -480,31 +480,34 @@ analysis["age group"] = pd.cut(
 )
 
 # Age
-fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
-first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
-last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
-sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
-sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
-sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
+if "age group" in analysis.columns:
+    fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
+    fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
+    first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
+    last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
+    sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
+    sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
+    sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
 
 # Education
-fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
-fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
-first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
-last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
-sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
-sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
-sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
+if "education" in analysis.columns:
+    fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
+    fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
+    first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
+    last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
+    sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
+    sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
+    sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
 
 # Gender
-fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
-fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
-first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
-last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
-sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
-sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
-sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
+if "gender" in analysis.columns:
+    fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
+    fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
+    first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
+    last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
+    sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
+    sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
+    sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
 
 # Demographic visualizations (boxplots)
 vars_list = [
