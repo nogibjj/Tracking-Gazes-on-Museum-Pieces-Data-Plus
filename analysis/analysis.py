@@ -51,61 +51,20 @@ output_plots_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE, 
 if not os.path.exists(output_plots_folder_path):
     os.makedirs(output_plots_folder_path)
 
-all_gaze = pd.read_csv(
+gaze_copy = pd.read_csv(
     os.path.join(output_folder_path, "all_gaze.csv"), compression="gzip"
 )
-demographic = pd.read_excel(os.path.join(output_folder_path, "demographic.xlsx"))
-all_gaze.reset_index(drop=True, inplace=True)
 
-
-# tag mapping to words, to be erased later on
-mapping = {
-    "r base": "right base",
-    "noise": "noise",
-    "m r hand": "male right hand",
-    "m l hand": "male left hand",
-    "l base": "left base",
-    "m feet": "male feet",
-    "m face": "male face",
-    "m chest": "male chest",
-    "lights": "lights",
-    "guy": "corner stranger",
-    "f r hand": "female right hand",
-    "f l hand": "female left hand",
-    "f feet": "female feet",
-    "f face": "female face",
-    "f chest": "female chest",
-    "crack": "asymmetric fissure",
-    "bg": "background",
-}
-
-all_gaze["tag"] = all_gaze["tag"].map(mapping)
-
-all_gaze["general tag"] = all_gaze["tag"].apply(lambda x: x.split(" ")[-1])
-
-
-demographic = demographic[
-    [
-        "School or degree course",
-        "age",
-        "education",
-        "gender",
-        "participant_folder",
-    ]
-]
-
-gaze_copy = pd.merge(
-    all_gaze, demographic, left_on="participant_folder", right_on="participant_folder"
-)
-
-gaze_copy = gaze_copy.iloc[:, :-1]  # Knocking out duplicate column
+data_folder_path = os.path.join(
+    env_var.ROOT_PATH, env_var.ART_PIECE
+)  # all the participant folders are here
 
 # Timestamps
-gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
-gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
-gaze_copy["ts"] = gaze_copy["timestamp [ns]_for_grouping"].apply(
+gaze_copy["ts"] = gaze_copy["timestamp [ns]"].apply(
     lambda x: dt.datetime.fromtimestamp(x / 1000000000)
 )
+gaze_copy = gaze_copy.groupby("participant_folder").apply(modify)
+gaze_copy["seconds_id"] = gaze_copy["increment_marker"].apply(lambda x: x.seconds)
 
 # Durations
 gaze_copy["duration"] = gaze_copy["next time"] - gaze_copy["ts"]
@@ -127,10 +86,8 @@ if len(null_participants) > 0:
     print(
         f"There are {len(null_participants)} participants that do not have any fixations."
     )
-    if not os.path.exists("quality_control/usable_participants"):
-        os.makedirs("quality_control/usable_participants")
 
-    with open("quality_control/usable_participants/error_participants.txt", "w") as f:
+    with open(os.path.join(output_folder_path, "error_participants.txt"), "w") as f:
         f.write(
             "These are the list of participants in the final csv without fixations: \n"
         )
@@ -354,13 +311,6 @@ fix_per_sec_mean = (
 fix_per_sec_mean.reset_index(inplace=True)
 
 # Most fixated on feature
-most_fix_gen = (
-    gaze_fixation.groupby("participant_folder")["general tag"]
-    .agg(pd.Series.mode)
-    .to_frame()
-)
-most_fix_gen.reset_index(inplace=True)
-
 most_fix_tag = (
     gaze_fixation.groupby("participant_folder")["tag"].agg(pd.Series.mode).to_frame()
 )
@@ -375,23 +325,15 @@ tag_fix = (
 tag_fix.reset_index(inplace=True)
 tag_fix_avg = tag_fix.groupby("tag")["gaze duration(s)"].mean()
 
-gen_tag_fix = (
-    gaze_fixation.groupby(["participant_folder", "general tag"])["gaze duration(s)"]
-    .sum()
-    .to_frame()
-)
-gen_tag_fix.reset_index(inplace=True)
-gen_tag_fix_avg = gen_tag_fix.groupby("general tag")["gaze duration(s)"].mean()
-
 # First and last things participants fixated on and for how long
 g = gaze_fixation.groupby("participant_folder")
 
 first = pd.concat([g.head(1)]).sort_values("participant_folder")
-first = first[["participant_folder", "general tag", "tag", "fixation duration(s)"]]
+first = first[["participant_folder", "tag", "fixation duration(s)"]]
 first.reset_index(inplace=True)
 
 last = pd.concat([g.tail(1)]).sort_values("participant_folder")
-last = last[["participant_folder", "general tag", "tag", "fixation duration(s)"]]
+last = last[["participant_folder", "tag", "fixation duration(s)"]]
 last.reset_index(inplace=True)
 
 
@@ -426,7 +368,6 @@ common_seq.columns = ["participant_folder", "sequence", "count"]
 # Putting together cumulative analysis dataframe
 analysis = fix_mean.reset_index()
 analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
-analysis["most fixated gen"] = most_fix_gen["general tag"]
 analysis["most fixated tag"] = most_fix_tag["tag"]
 analysis["first fixation"] = first["tag"]
 analysis["first fix time"] = first["fixation duration(s)"]
@@ -440,11 +381,6 @@ analysis["most common sequence"] = common_seq["sequence"]
 analysis["sequence count"] = common_seq["count"]
 
 # First time participants fixated on each feature
-genid = gaze_fixation.groupby(["participant_folder", "general tag"])
-first_gen = pd.concat([genid.first()])
-first_gen.reset_index(inplace=True)
-first_gen = first_gen[["participant_folder", "general tag", "time elapsed(s)"]]
-
 tagid = gaze_fixation.groupby(["participant_folder", "tag"])
 first_tag = pd.concat([tagid.first()])
 first_tag.reset_index(inplace=True)
@@ -465,147 +401,164 @@ plt.title("Fixation Duration by Feature (All Participants)")
 plt.suptitle("")
 plt.show()
 
-# Demographics
-# Add demographic data to analysis dataframe
-analysis = pd.merge(
-    analysis,
-    demographic,
-    left_on="participant_folder",
-    right_on="participant_folder",
-    how="left",
-)
-analysis.sort_values("age", inplace=True)
-analysis["age group"] = pd.cut(
-    analysis["age"], bins=6, right=True, precision=0, include_lowest=True
-)
 
-# Age
-if "age group" in analysis.columns:
-    fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-    fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
-    first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
-    last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
-    sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
-    sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
-    sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
+if env_var.DEMOGRAPHICS:
+    # Demographics
+    demographic = pd.read_excel(os.path.join(data_folder_path, "demographic.xlsx"))
 
-# Education
-if "education" in analysis.columns:
-    fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
-    fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
-    first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
-    last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
-    sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
-    sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
-    sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
+    # Add demographic data to analysis dataframe
+    analysis = pd.merge(
+        analysis,
+        demographic,
+        left_on="participant_folder",
+        right_on="participant_folder",
+        how="left",
+    )
+    analysis.sort_values("age", inplace=True)
+    analysis["age group"] = pd.cut(
+        analysis["age"], bins=6, right=True, precision=0, include_lowest=True
+    )
 
-# Gender
-if "gender" in analysis.columns:
-    fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
-    fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
-    first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
-    last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
-    sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
-    sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
-    sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
+    # Age
+    if "age group" in analysis.columns:
+        fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
+        fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
+        first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
+        last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
+        sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
+        sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
+        sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
 
-# Demographic visualizations (boxplots)
-vars_list = [
-    ["mean fix duration(s)", "age group"],
-    ["mean fix duration(s)", "education"],
-    ["mean fix duration(s)", "gender"],
-    ["first fix time", "age group"],
-    ["first fix time", "education"],
-    ["first fix time", "gender"],
-    ["last fix time", "age group"],
-    ["last fix time", "education"],
-    ["last fix time", "gender"],
-    ["fixation freq", "age group"],
-    ["fixation freq", "education"],
-    ["fixation freq", "gender"],
-    ["mean sac duration(s)", "age group"],
-    ["mean sac duration(s)", "education"],
-    ["mean sac duration(s)", "gender"],
-    ["mean sac distance", "age group"],
-    ["mean sac distance", "education"],
-    ["mean sac distance", "gender"],
-    ["saccade freq", "age group"],
-    ["saccade freq", "education"],
-    ["saccade freq", "gender"],
-]
+    # Education
+    if "education" in analysis.columns:
+        fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
+        fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
+        first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
+        last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
+        sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
+        sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
+        sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
 
+    # Gender
+    if "gender" in analysis.columns:
+        fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
+        fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
+        first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
+        last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
+        sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
+        sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
+        sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
 
-for vars in vars_list:
-    analysis.boxplot(column=vars[0], by=vars[1])
-    plt.xlabel(vars[0])
-    plt.ylabel(vars[1])
-    plt.title(f"Plotting {vars[0]} by {vars[1]}")
-    plt.suptitle("")
-    path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
-    plt.savefig(path)
+    # Demographic visualizations (boxplots)
+    vars_list = [
+        ["mean fix duration(s)", "age group"],
+        ["mean fix duration(s)", "education"],
+        ["mean fix duration(s)", "gender"],
+        ["first fix time", "age group"],
+        ["first fix time", "education"],
+        ["first fix time", "gender"],
+        ["last fix time", "age group"],
+        ["last fix time", "education"],
+        ["last fix time", "gender"],
+        ["fixation freq", "age group"],
+        ["fixation freq", "education"],
+        ["fixation freq", "gender"],
+        ["mean sac duration(s)", "age group"],
+        ["mean sac duration(s)", "education"],
+        ["mean sac duration(s)", "gender"],
+        ["mean sac distance", "age group"],
+        ["mean sac distance", "education"],
+        ["mean sac distance", "gender"],
+        ["saccade freq", "age group"],
+        ["saccade freq", "education"],
+        ["saccade freq", "gender"],
+    ]
 
-# Grouped boxplots
-# Fixation duration
-sns.boxplot(
-    x=analysis["age group"], y=analysis["mean fix duration(s)"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["mean fix duration(s)"], hue=analysis["gender"]
-)
+    for vars in vars_list:
+        analysis.boxplot(column=vars[0], by=vars[1])
+        plt.xlabel(vars[0])
+        plt.ylabel(vars[1])
+        plt.title(f"Plotting {vars[0]} by {vars[1]}")
+        plt.suptitle("")
+        path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
+        plt.savefig(path)
 
-# First fixation duration
-sns.boxplot(
-    x=analysis["age group"], y=analysis["first fix time"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["first fix time"], hue=analysis["gender"]
-)
+    # Grouped boxplots
+    # Fixation duration
+    sns.boxplot(
+        x=analysis["age group"],
+        y=analysis["mean fix duration(s)"],
+        hue=analysis["gender"],
+    )
+    sns.boxplot(
+        x=analysis["education"],
+        y=analysis["mean fix duration(s)"],
+        hue=analysis["gender"],
+    )
 
-# Last fixation duration
-sns.boxplot(
-    x=analysis["age group"], y=analysis["last fix time"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["last fix time"], hue=analysis["gender"]
-)
+    # First fixation duration
+    sns.boxplot(
+        x=analysis["age group"], y=analysis["first fix time"], hue=analysis["gender"]
+    )
+    sns.boxplot(
+        x=analysis["education"], y=analysis["first fix time"], hue=analysis["gender"]
+    )
 
-# Fixation frequency
-sns.boxplot(
-    x=analysis["age group"], y=analysis["fixation freq"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["fixation freq"], hue=analysis["gender"]
-)
+    # Last fixation duration
+    sns.boxplot(
+        x=analysis["age group"], y=analysis["last fix time"], hue=analysis["gender"]
+    )
+    sns.boxplot(
+        x=analysis["education"], y=analysis["last fix time"], hue=analysis["gender"]
+    )
 
-# Saccade duration
-sns.boxplot(
-    x=analysis["age group"], y=analysis["mean sac duration(s)"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["mean sac duration(s)"], hue=analysis["gender"]
-)
+    # Fixation frequency
+    sns.boxplot(
+        x=analysis["age group"], y=analysis["fixation freq"], hue=analysis["gender"]
+    )
+    sns.boxplot(
+        x=analysis["education"], y=analysis["fixation freq"], hue=analysis["gender"]
+    )
 
-# Saccade distance
-sns.boxplot(
-    x=analysis["age group"], y=analysis["mean sac distance"], hue=analysis["gender"]
-)
-sns.boxplot(
-    x=analysis["education"], y=analysis["mean sac distance"], hue=analysis["gender"]
-)
+    # Saccade duration
+    sns.boxplot(
+        x=analysis["age group"],
+        y=analysis["mean sac duration(s)"],
+        hue=analysis["gender"],
+    )
+    sns.boxplot(
+        x=analysis["education"],
+        y=analysis["mean sac duration(s)"],
+        hue=analysis["gender"],
+    )
 
-# Saccade frequency
-sns.boxplot(x=analysis["age group"], y=analysis["saccade freq"], hue=analysis["gender"])
-sns.boxplot(x=analysis["education"], y=analysis["saccade freq"], hue=analysis["gender"])
+    # Saccade distance
+    sns.boxplot(
+        x=analysis["age group"], y=analysis["mean sac distance"], hue=analysis["gender"]
+    )
+    sns.boxplot(
+        x=analysis["education"], y=analysis["mean sac distance"], hue=analysis["gender"]
+    )
 
-# Checking for fixations in participants who don't have registered fixation IDs
-gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
-gaze_null.drop("row_number", axis=1, inplace=True)
+    # Saccade frequency
+    sns.boxplot(
+        x=analysis["age group"], y=analysis["saccade freq"], hue=analysis["gender"]
+    )
+    sns.boxplot(
+        x=analysis["education"], y=analysis["saccade freq"], hue=analysis["gender"]
+    )
 
-qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
-qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
-qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
-qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
-qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
-qualify["angle(r)"] = qualify.apply(
-    lambda x: math.atan2(x.change_y, x.change_x), axis=1
-)
+    # Checking for fixations in participants who don't have registered fixation IDs
+    gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+    gaze_null.drop("row_number", axis=1, inplace=True)
+
+    qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+    qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+    qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+    qualify["distance"] = np.sqrt(
+        (qualify["change_x"] ** 2) + (qualify["change_y"] ** 2)
+    )
+    qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+    qualify["angle(r)"] = qualify.apply(
+        lambda x: math.atan2(x.change_y, x.change_x), axis=1
+    )
