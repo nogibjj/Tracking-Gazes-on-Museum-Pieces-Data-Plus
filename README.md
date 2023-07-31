@@ -1,5 +1,12 @@
-# Tracking-Gazes-on-Museum-Pieces-Data-Plus
-This is a data plus project where we track the gazes of participants who were looking at a specific Truscan art piece.
+# Generalized Framework for Gaze Tracking
+This repo is part of the work done by the team 19: Neurocities and Ruinscapes as part of Data+ at Duke University. We (Aditya, April and Eric) present a generalized framework that can be applied to any gaze tracking dataset that contains a gaze video along with an accompanying CSV of gaze points. 
+
+We have utilized a wide array of image processing and statistical techniques to create the entire framework. 
+
+# Framework Overview
+![Alt text](Flowchart.jpg "Title")
+
+# Steps to run the framework: 
 
 1. Data Preparation (Sample data in the required format provided in this repo)
 - Create a data folder in your root path. 
