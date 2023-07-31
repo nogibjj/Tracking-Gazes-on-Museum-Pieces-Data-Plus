@@ -23,7 +23,6 @@ sys.path.insert(0, path)
 
 from config.config import *
 
-# print(" Made it past imports")
 # Set env variables based on config file
 try:
     env = sys.argv[1]
@@ -53,12 +52,10 @@ for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
         print(f"{folder} is not a folder")
         continue
     participant_id = folder.split(os.sep)[-1]  # get the participant id
-    # print(files)
-    # if index != 32:
-    #     continue
+
     file_found = False
     for file in files:
-        if "updated_gaze" in file and ".csv" in file:  # add participant as condition
+        if "updated_gaze" in file and ".csv" in file:
             updated_gaze_path = os.path.join(output_folder_path, folder, file)
             participant_reference_gaze_csv = pd.read_csv(updated_gaze_path)
             file_found = True
@@ -74,9 +71,7 @@ for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
     participant_reference_gaze_csv["tag"] = participant_reference_gaze_csv[
         "ref_coordinates"
     ].apply(lambda x: gaze_tagger(x, user_tag_coordinates))
-    # current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     participant_output_path = os.path.join(output_folder_path, folder)
-    # participant_reference_gaze_csv.to_csv(participant_output_path, f"final_gaze_tagged_{participant_id}_{current_time}.csv")
     participant_reference_gaze_csv.to_csv(
         os.path.join(participant_output_path, "final_gaze_tagged.csv")
     )

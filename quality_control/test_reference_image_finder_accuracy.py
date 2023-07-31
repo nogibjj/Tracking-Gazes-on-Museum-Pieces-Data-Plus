@@ -1,3 +1,10 @@
+"""
+Author: Eric Rios Soderman (ejr41) 
+This is a script that checks if reducing the dimensions of the image for reference image finder produced a less accurate reference frame.
+
+Another interesting case revealed by the script was the fact that a small sample of frames had better MSE AMONGST each other
+than the reference frame. With bigger samples, the reference frame would have been chosen. 
+"""
 import sys
 import os
 import time

@@ -49,6 +49,7 @@ flag = True
 
 param = [reference_image, feature_coordinates]
 
+# the original image and the backup, reset image
 img = reference_image
 reset_img = copy.deepcopy(reference_image)
 
@@ -59,6 +60,7 @@ print(f"width: {width}, height: {height}, channels: {channels}")
 cv2.namedWindow("image", flags=cv2.WINDOW_NORMAL)
 cv2.resizeWindow("image", width, height)
 
+# the function that handles the mouse events
 cv2.setMouseCallback("image", drawfunction, param)
 
 while flag:
@@ -67,6 +69,7 @@ while flag:
     if key == ord("0"):
         break
 
+    # this elif block resets the params and the image
     elif key == ord("5"):
         cv2.destroyAllWindows()
         img = copy.deepcopy(reset_img)
@@ -94,7 +97,7 @@ coordinates_df = pd.DataFrame(
         "(center_x,center_y)",
     ],
 )
-
+# asserting that the properties of the rectangle's coordinates are correct
 assert [i[0] for i in coordinates_df["(x1,y1)"]] == [
     i[0] for i in coordinates_df["(x3,y3)"]
 ]
@@ -111,13 +114,9 @@ assert [i[1] for i in coordinates_df["(x2,y2)"]] == [
 print("assertions passed")
 print(coordinates_df.head())
 
-# current_time = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 print(f"Saving the tag coordinates csv file")
-# coordinates_df.to_csv(
-#     os.path.join(output_folder_path, f"tags_coordinates_{current_time}.csv"),
-#     index=False,
-# )
+
 coordinates_df.to_csv(
     os.path.join(output_folder_path, "tags_coordinates.csv"),
     index=False,
