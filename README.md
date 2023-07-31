@@ -28,7 +28,7 @@ We have utilized a wide array of image processing and statistical techniques to 
 4. **Descriptive Statistics**
     - Using the tagged data, various descriptive statistics such as time spent looking at features, comparative analysis are performed. 
 
-    **Demographic Data**
+    - **Demographic Data**
     - If Demographic data is present, the analysis is extended to include demographic features such as gender, education and age. 
     - The boxplots will have an additional demographic dimension.
 
