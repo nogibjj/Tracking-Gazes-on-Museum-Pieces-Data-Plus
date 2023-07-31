@@ -28,4 +28,3 @@ python grouping_csvs.py $user
 # Run analysis script
 cd ../analysis
 python analysis.py $user
-
