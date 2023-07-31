@@ -23,7 +23,7 @@ We have utilized a wide array of image processing and statistical techniques to 
 3. **Tagging**
     - The user tracks various features of interest onto the reference image by using bounding boxes and labels them.
           - This is accomplished by using the left mouse button to begin the capture and the right button to finalize said capture.
-          - The user also labels the feature after each successive capture.
+          - The user also labels the feature after each successive capture and then presses enter to continue capturing. 
           - The user can also reset the capture session by pressing the "5" key or finish it by pressing the "9" key.
     - Any gaze point, coming from the updated csv with the mapped gaze points, found within the labeled boxes acquires the tag from said box.
           - If boxes overlap, the labeled, bounding box with the centroid closest to the gaze point is chosen as the tag of that gaze point.
