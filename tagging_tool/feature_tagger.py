@@ -7,9 +7,7 @@ Author: Eric Rios-Soderman"""
 import os
 from tag_event_functions import drawfunction
 import cv2
-import matplotlib.pyplot as plt
 import pandas as pd
-import datetime as dt
 import sys
 import copy
 

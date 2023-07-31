@@ -25,6 +25,7 @@ class eric_config(base_class):
     # ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
     OUTPUT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\output"
     # REFERENCE_IMAGE = False  # Flag indicating if reference image is manually found
+    ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
 
 
 class april_config(base_class):
