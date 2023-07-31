@@ -18,7 +18,7 @@ def is_single_color(
     resize=(100, 100),
     maximum_robust=False,
 ):
-    """Verify if frame has pixel values of one color.
+    """Verify if frame has pixel values of mostly one color.
 
     maximum_robust is a flag that will not allow the function
     to resize the image. The tradeoff is maximum accuracy for
@@ -27,7 +27,8 @@ def is_single_color(
         cv2_array = input_cv2_array
 
     else:
-        # Other method is INTER_AREA
+        # Other method is INTER_AREA; no discernable difference was noticed,
+        # but the checking of this was not rigorous.
         cv2_array = cv2.resize(input_cv2_array, resize, interpolation=cv2.INTER_CUBIC)
 
     image = np.array(cv2_array, np.uint8)
@@ -39,7 +40,9 @@ def is_single_color(
 
     if maximum_robust:
         # this is the first pass of the function
-        # to save computation time
+        # to save computation time, as most
+        # single color frames will be caught here.
+
         # Get the pixel data
 
         pixels = list(image.getdata())
@@ -51,12 +54,18 @@ def is_single_color(
             # print("The image is only of one color.")
             return True
 
-    # this is the fully robust computation below
-    # but it is very slow with large arrays
+    # This is the fully robust computation below,
+    # but it is very slow with large arrays.
+    # The benefit is that it will catch frames
+    # that are not single color, but are close to it,
+    # such as a frame with a lot of white and a little black.
     new_pixels = np.array(image.getdata())
     _, counts = np.unique(new_pixels, return_counts=True)
     idx = np.argmax(counts)
 
+    # 90% of the pixels are of the same color.
+    # This is a very high threshold, but it is necessary
+    # to avoid false positives.
     if counts[idx] > new_pixels.shape[0] * 0.9:
         # print("The image is mostly one color or more colors.")
         return True
@@ -74,6 +83,13 @@ https://blog.francium.tech/feature-detection-and-matching-with-opencv-5fd2394a59
 
 
 def reference_gaze_point_mapper(img1, img2, x_pixel, y_pixel):
+    """
+    Map the gaze point from the current image to the reference image.
+
+    The main idea is to find the homography matrix that transforms the
+    gaze point from the current image to the reference image.
+
+    """
     gaze_point = np.array([[x_pixel, y_pixel, 1]]).reshape(3, 1)
     MIN_MATCHES = 5
 
@@ -221,7 +237,9 @@ def save_outputs(
 # mse function for the reference image calculations
 def mse(img1, img2, debug=False):
     """Mean squared error function for
-    the image calculations."""
+    the image calculations.
+
+    This function is mainly used on grayscale images."""
     if debug:
         print("img1 shape: ", img1.shape)
     h, w = img1.shape
@@ -286,7 +304,7 @@ def best_frame_finder(
             # protect against outliers.
             # However, in a video with 1000 frames and 20 jittery/uncommon ones,
             # those 20 bad ones will be outliers in all the MSEs of the
-            # good frames, but the bads will simultaneously have the worst MSE.
+            # good frames, but the bad ones will simultaneously have the worst MSE.
         frame_mse[main_key] = np.mean(mse_list.copy())
         frame_mse_with_list[main_key] = (np.mean(mse_list), mse_list.copy())
         # print(f"Obtained MSE for video frame: {main_key}")
@@ -321,7 +339,14 @@ def reference_image_finder(
 
     with the last few candidate, reference frames.
 
-    The number of minutes in a video is unimportant."""
+    The number of minutes in a video is unimportant.
+
+    The output is a tuple with the best frame and its key.
+
+
+    Sidenote : Code is commented because experiments to check the validity of the
+    reference frame after downscaling the image were conducted. They will be left there
+    for future reference."""
 
     cap = cv2.VideoCapture(video_path)
     final_frame_dictionary_gray = dict()

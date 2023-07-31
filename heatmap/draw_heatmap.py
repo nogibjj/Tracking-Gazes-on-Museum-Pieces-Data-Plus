@@ -2,7 +2,7 @@
 Author: Aditya John (aj391), Eric Rios Soderman (ejr41) (Reference Image Implementation)
 This is a script that ingests a csv of gazes (when looking at an object) and outputs a final image 
 with a heatmap across the various pixels of interest. 
-Spdates the gaze.csv file with new 'gaze' pixel locations that correspond to the reference image 
+Updates the gaze.csv file with new 'gaze' pixel locations that correspond to the reference image 
 instead of the actual video. 
 """
 import sys

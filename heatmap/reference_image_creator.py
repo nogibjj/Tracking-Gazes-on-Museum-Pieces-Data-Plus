@@ -1,7 +1,15 @@
+"""
+Author: Eric Rios Soderman (ejr41) 
+This is a script that looks through the participant folders' videos and chooses the best frame to use as a reference image.
+
+Each video's reference frame is saved in a dictionary, and the one with the lowest MSE is chosen as the best frame.
+"""
+
 import sys
 import os
 import time
 
+# add the parent directory to the system path
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # prepend parent directory to the system path:
 sys.path.insert(0, path)
@@ -55,6 +63,7 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
     video_file = os.path.join(participant_folder, "*.mp4")
     video_file = glob.glob(video_file)[0]
 
+    # If reference frame exists, the script ends here.
     if env_var.REFERENCE_IMAGE:
         ref_image = cv2.imread(
             os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
@@ -71,6 +80,8 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         cap.release()
 
+        # the following optimization is to reduce processing
+        # time for the is_single_color function
         # preserve the aspect ratio
         resize_factor = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
         factor_found = False
@@ -87,7 +98,7 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
                 new_width = int(frame_width * factor)
                 factor_found = True
                 break
-
+        # find the best frame in the video
         ref_image, ref_image_grey, ref_num = reference_image_finder(
             video_file,
             buckets=fps,
@@ -96,7 +107,9 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
             debug=False,
         )
         print("Reference image extracted from video.")
-
+        # save the best frame to the input folder
+        # the gray frame is for comparison purposes
+        # the color frame is for visualization purposes
         reference_frame_dict[index] = ref_image
         reference_frame_gray_dict[index] = ref_image_grey
 
@@ -107,7 +120,7 @@ final_reference_frame_gray, final_reference_frame_num = best_frame_finder(
 )
 
 final_reference_frame_color = reference_frame_dict[final_reference_frame_num]
-
+# write the reference image to the input folder
 cv2.imwrite(
     os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png"),
     final_reference_frame_color,

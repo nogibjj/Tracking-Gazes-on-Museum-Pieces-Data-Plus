@@ -10,7 +10,6 @@ Author: Eric Rios-Soderman
 import pandas as pd
 import os
 import datetime as dt
-import glob
 import sys
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

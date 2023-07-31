@@ -9,6 +9,9 @@ import math
 
 
 def drawfunction(event, x, y, flags, param):
+    """
+    Register the mouse events as 4 sets of (x,y) coordinates representing a rectangle..
+    """
     global x1, y1
     drawing = None
     img = param[0]
@@ -37,7 +40,6 @@ def drawfunction(event, x, y, flags, param):
         # left upper corner is (x1, y1)
         # right lower corner is (x, y)
         if x1 < x2 and y1 > y2:
-            # coordinates_storage.extend([[name, x1, y1, x2, y2, x1, y2, x2, y1]])
             coordinates_storage.extend(
                 [[name, (x1, y1), (x2, y2), (x1, y2), (x2, y1), (center_x, center_y)]]
             )
@@ -45,7 +47,6 @@ def drawfunction(event, x, y, flags, param):
         # first coordinate is the lower right corner
         # second coordinate is the upper left corner
         elif x1 > x2 and y1 < y2:
-            # coordinates_storage.extend([[name, x2, y2, x1, y1, x2, y1, x1, y2]])
             coordinates_storage.extend(
                 [[name, (x2, y2), (x1, y1), (x2, y1), (x1, y2), (center_x, center_y)]]
             )
@@ -53,7 +54,6 @@ def drawfunction(event, x, y, flags, param):
         # first coordinate is the lower left corner
         # second coordinate is the upper right corner
         elif x1 < x2 and y1 < y2:
-            # coordinates_storage.extend([[name, x1, y2, x2, y1, x1, y1, x2, y2]])
             coordinates_storage.extend(
                 [[name, (x1, y2), (x2, y1), (x1, y1), (x2, y2), (center_x, center_y)]]
             )
@@ -61,13 +61,13 @@ def drawfunction(event, x, y, flags, param):
         # first coordinate is the upper right corner
         # second coordinate is the lower left corner
         elif x1 > x2 and y1 > y2:
-            # coordinates_storage.extend([[name, x2, y1, x1, y2, x2, y2, x1, y1]])
             coordinates_storage.extend(
                 [[name, (x2, y1), (x1, y2), (x2, y2), (x1, y1), (center_x, center_y)]]
             )
 
 
 def ref_coordinate_processing(gaze_reference_df):
+    """Process the reference coordinates into a tuple"""
     gaze_reference_df["ref_coordinates"] = pd.Series(
         zip(gaze_reference_df["ref_center_x"], gaze_reference_df["ref_center_y"])
     )
@@ -108,7 +108,10 @@ def coordinate_parser(tuple_string):
 
 
 def gaze_tagger(gaze_reference_df_obs, tags_df):
-    """Tag the observation gaze with the feature"""
+    """Tag the observation gaze point with the most likely feature.
+
+    The feature with the closest center point to the observation gaze point
+    will be chosen as the tag for that gaze point."""
 
     # observation from that updated gaze csv
     # obtained and parsed from ref_coordinates
@@ -181,9 +184,6 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
                         center_x
                     ), copy.deepcopy(center_y)
 
-                    # print("new name : ", name)
-                    # print("new center : ", smallest_center_x, smallest_center_y)
-
             else:
                 name = copy.deepcopy(feature)
 
@@ -193,6 +193,7 @@ def gaze_tagger(gaze_reference_df_obs, tags_df):
 
                 distance_from_center = math.dist((obs_x, obs_y), (center_x, center_y))
 
+    # for cleanup
     gc.collect()
 
     return name

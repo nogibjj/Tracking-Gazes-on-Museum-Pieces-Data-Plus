@@ -12,7 +12,7 @@ class base_class:
     DEMOGRAPHICS = True  # User provides demographics data
 
     ART_PIECE = "vulci_site"  # Name of the art piece/folder where the data is kept
-    ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
+    # ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
 
 
 class aditya_config(base_class):

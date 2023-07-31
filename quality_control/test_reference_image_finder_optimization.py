@@ -1,3 +1,9 @@
+"""
+Author: Eric Rios Soderman (ejr41) 
+This is a script that checks if reducing the dimensions of the image for the is_single_color function affected the final, chosen reference frame.
+
+It didn't change the output, which was a positive outcome. 
+"""
 import sys
 import os
 import time
