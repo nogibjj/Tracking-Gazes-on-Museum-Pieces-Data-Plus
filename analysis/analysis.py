@@ -451,8 +451,6 @@ first_tag.reset_index(inplace=True)
 first_tag = first_tag[["participant_folder", "tag", "time elapsed(s)"]]
 
 # Visualizations (boxplot)
-plt.style.use("ggplot")
-
 # Time spent on each feature
 tag_time = (
     gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
