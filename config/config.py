@@ -30,6 +30,7 @@ class eric_config(base_class):
 class april_config(base_class):
     ROOT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_data"
     OUTPUT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_output"
+    ART_PIECE = "truscan_statue"
 
 
 # User, please uncomment the following lines and add your own paths
