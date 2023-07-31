@@ -18,7 +18,7 @@ We have utilized a wide array of image processing and statistical techniques to 
     - **Scanpath Visualization**
         - The next step is the scanpath visualization. Two kinds of visualizations are done. 
             - Video: The gaze points are plotted on the actual video using the raw data. 
-            - Reference Image: The gaze points are plotted (as a video) on the reference iamge using the output from the heatmap. 
+            - Reference Image: The gaze points are plotted (as a video) on the reference image using the output from the heatmap. 
 
 3. **Tagging**
     - The user tracks various points of interest onto the reference image, which are then compared against the map CSV to generate the "tags" for each gaze point. 
