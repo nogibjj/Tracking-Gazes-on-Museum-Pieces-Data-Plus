@@ -7,7 +7,10 @@ class base_class:
     DETECT_BOUNDING_SIZE = 50  # Size of the bounding box for detecition
     DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
     RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
+
     REFERENCE_IMAGE = True  # Flag indicating if reference image is manually found
+    DEMOGRAPHICS = True  # User provides demographics data
+
     ART_PIECE = "vulci_site"  # Name of the art piece/folder where the data is kept
     ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
 
