@@ -408,7 +408,7 @@ first_tag.to_excel(
     os.path.join(output_folder_path, "first fixation on each feature.xlsx")
 )
 
-# Visualizations (boxplot)
+# Visualizations
 # Time spent on each feature
 tag_time = (
     gaze_fixation.groupby(["participant_folder", "tag"])["gaze duration(s)"]
@@ -424,11 +424,26 @@ plt.suptitle("")
 plt.savefig(os.path.join(output_plots_folder_path, "time spent on each feature.png"))
 plt.show()
 
-#
+# Frequency of a tag being the first fixation
+first_fix_plot = analysis["first fixation"].value_counts().to_frame().reset_index()
+plt.barh(first_fix_plot["first fixation"], first_fix_plot["count"])
+plt.xlabel("Count")
+plt.ylabel("Feature")
+plt.title("No. of Times a Feature was the First Fixation")
+plt.savefig(os.path.join(output_plots_folder_path, "first fixation features.png"))
+plt.show()
 
+# Frequency of a tag being the last fixation
+last_fix_plot = analysis["last fixation"].value_counts().to_frame().reset_index()
+plt.barh(last_fix_plot["last fixation"], last_fix_plot["count"])
+plt.xlabel("Count")
+plt.ylabel("Feature")
+plt.title("No. of Times a Feature was the Last Fixation")
+plt.savefig(os.path.join(output_plots_folder_path, "last fixation features.png"))
+plt.show()
 
+# Demographics
 if env_var.DEMOGRAPHICS:
-    # Demographics
     demographic = pd.read_excel(os.path.join(data_folder_path, "demographic.xlsx"))
 
     # Add demographic data to analysis dataframe
