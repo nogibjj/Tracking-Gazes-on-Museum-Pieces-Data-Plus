@@ -1,5 +1,6 @@
 #!/bin/bash
 
+pip install -r requirements.txt
 read -p 'Enter the user whose configuration needs to be used for the script: ' user
 
 # Create the reference image and tag it
