@@ -14,7 +14,7 @@ sys.path.insert(0, path)
 
 import glob
 import cv2
-from heatmap.functions import (
+from create_reference_image.functions import (
     reference_image_finder,
     mse,
 )

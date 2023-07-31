@@ -14,10 +14,7 @@ path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # prepend parent directory to the system path:
 sys.path.insert(0, path)
 
-from collections import defaultdict
 import glob
-import pandas as pd
-import numpy as np
 import cv2
 from functions import (
     reference_image_finder,

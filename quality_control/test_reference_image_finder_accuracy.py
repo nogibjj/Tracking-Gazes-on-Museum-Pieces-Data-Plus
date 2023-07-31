@@ -14,7 +14,7 @@ path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
 
 import glob
-from heatmap.functions import (
+from create_reference_image.functions import (
     test_reference_image_finder,
 )
 from config.config import *
