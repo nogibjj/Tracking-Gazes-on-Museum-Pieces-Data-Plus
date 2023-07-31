@@ -6,16 +6,16 @@ We have utilized a wide array of image processing and statistical techniques to 
 # Framework Overview
 ![Alt text](Flowchart.jpg "Title")
 
-1. Reference Image Finder
+1. **Reference Image Finder**
 - In case the user provides a reference image this step is skipped. 
 - If not, the script runs through all the videos and chooses the best frame with the minimal Mean Squared Error. 
 
-2. Heatmap
+2. **Heatmap**
 - Maps all the gaze points from the video onto the reference image (accouting for shift in scale, roation and prespective) using ORB (feature detector) with homography to perfrom this task. 
 - This also (typically) performs downsampling as the input data is usually in nanoseconds while the output is in milliseconds (openCV constraints). 
 - The gaze points for both the raw data and the corresponding coordinates on the reference image are plotted under the qc_heatmap folder inside heatmap, which can be used to cross reference the quality of the matching .
 
-- Scanpath Visualization
+- **Scanpath Visualization**
     - The next step is the scanpath visualization. Two kinds of visualizations are done. 
     -   Video: The gaze points are plotted on the actual video using the raw data. 
     -   Reference Image: The gaze points are plotted (as a video) on the reference iamge using the output from the heatmap. 
