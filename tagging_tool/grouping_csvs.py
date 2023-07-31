@@ -82,6 +82,9 @@ for folder in sorted(os.listdir(output_folder_path)):
 
     gaze_csv["participant_folder"] = folder.split(os.sep)[-1]
 
+    # this vts bool is a distinction made for our stakeholders
+    # It is representative of surveys that were taken during the study,
+    # which are only applicable to the participants that took them.
     if "vts" in participant_id:
         gaze_csv["vts_bool"] = True
     else:
