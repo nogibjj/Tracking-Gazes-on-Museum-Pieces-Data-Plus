@@ -12,7 +12,7 @@ class base_class:
     DEMOGRAPHICS = True  # User provides demographics data
     AGE_GROUP_BINS = 6  # Number of bins for age groups
 
-    ART_PIECE = "vulci_site"  # Name of the art piece/folder where the data is kept
+    ART_PIECE = "truscan_demo"  # Name of the art piece/folder where the data is kept
 
 
 class aditya_config(base_class):
@@ -25,18 +25,17 @@ class eric_config(base_class):
     # ROOT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\eye tracking data from the museum in Rome (Pupil Invisible)"
     OUTPUT_PATH = r"C:\Users\ericr\Desktop\Data + Plus\output"
     # REFERENCE_IMAGE = False  # Flag indicating if reference image is manually found
-    # ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
 
 
 class april_config(base_class):
     ROOT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_data"
     OUTPUT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_output"
-    ART_PIECE = "truscan_statue"
 
 
 class demo_config(base_class):
-    ROOT_PATH = "../data"
-    OUTPUT_PATH = "../user_output"
+    ROOT_PATH = "./demo_data"
+    OUTPUT_PATH = "./demo_output"
+    REFERENCE_IMAGE = False  # Flag indicating if reference image is manually found
 
 
 # User, please uncomment the following lines and add your own paths
