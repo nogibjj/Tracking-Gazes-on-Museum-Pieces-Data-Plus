@@ -606,14 +606,19 @@ if env_var.DEMOGRAPHICS:
     ]
 
     for vars in vars_list:
-        analysis.boxplot(column=vars[0], by=vars[1])
-        plt.xlabel(vars[0])
-        plt.ylabel(vars[1])
-        plt.xticks(rotation=90)
-        plt.title(f"Plotting {vars[0]} by {vars[1]}")
-        plt.suptitle("")
-        path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
-        plt.savefig(path)
+        try:
+            analysis.boxplot(column=vars[0], by=vars[1])
+            plt.xlabel(vars[0])
+            plt.ylabel(vars[1])
+            plt.xticks(rotation=90)
+            plt.title(f"Plotting {vars[0]} by {vars[1]}")
+            plt.suptitle("")
+            path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
+            plt.savefig(path)
+        except:
+            # when they lack a certain demographic variable
+            print(f"{vars} not found in demographic data")
+            continue
 
     if "gender" in analysis.columns:
         vars_list_group = [
@@ -634,14 +639,19 @@ if env_var.DEMOGRAPHICS:
         ]
 
         for vars in vars_list_group:
-            sns.boxplot(
-                x=analysis[f"{vars[1]}"],
-                y=analysis[f"{vars[0]}"],
-                hue=analysis["gender"],
-            )
-            plt.xticks(rotation=90)
-            plt.title(f"Plotting {vars[0]} by {vars[1]} (grouped by gender)")
-            path = os.path.join(
-                output_plots_folder_path, f"{vars[0]}_{vars[1]} by gender.png"
-            )
-            plt.savefig(path)
+            try:
+                sns.boxplot(
+                    x=analysis[f"{vars[1]}"],
+                    y=analysis[f"{vars[0]}"],
+                    hue=analysis["gender"],
+                )
+                plt.xticks(rotation=90)
+                plt.title(f"Plotting {vars[0]} by {vars[1]} (grouped by gender)")
+                path = os.path.join(
+                    output_plots_folder_path, f"{vars[0]}_{vars[1]} by gender.png"
+                )
+                plt.savefig(path)
+            except:
+                # when they lack a certain demographic variable
+                print(f"{vars} not found in demographic data")
+                continue

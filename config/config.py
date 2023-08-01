@@ -33,6 +33,11 @@ class april_config(base_class):
     ART_PIECE = "truscan_statue"
 
 
+class demo_config(base_class):
+    ROOT_PATH = "../data"
+    OUTPUT_PATH = "../user_output"
+
+
 # User, please uncomment the following lines and add your own paths
 # class user_config(base_class):
 #     ROOT_PATH = "PUT YOUR ROOT PATH HERE"
