@@ -462,10 +462,12 @@ if env_var.DEMOGRAPHICS:
         right_on="participant_folder",
         how="left",
     )
-    analysis.sort_values("age", inplace=True)
-    analysis["age group"] = pd.cut(
-        analysis["age"], bins=6, right=True, precision=0, include_lowest=True
-    )
+
+    if "age" in analysis.columns:
+        analysis.sort_values("age", inplace=True)
+        analysis["age group"] = pd.cut(
+            analysis["age"], bins=6, right=True, precision=0, include_lowest=True
+        )
 
     # Age
     if "age group" in analysis.columns:
