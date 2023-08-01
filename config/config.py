@@ -33,9 +33,8 @@ class april_config(base_class):
 
 
 class demo_config(base_class):
-    ROOT_PATH = "./demo_data"
-    OUTPUT_PATH = "./demo_output"
-    REFERENCE_IMAGE = False  # Flag indicating if reference image is manually found
+    ROOT_PATH = "../demo_data"
+    OUTPUT_PATH = "../demo_output"
 
 
 # User, please uncomment the following lines and add your own paths
