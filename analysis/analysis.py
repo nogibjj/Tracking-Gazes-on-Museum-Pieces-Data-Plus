@@ -609,107 +609,39 @@ if env_var.DEMOGRAPHICS:
         analysis.boxplot(column=vars[0], by=vars[1])
         plt.xlabel(vars[0])
         plt.ylabel(vars[1])
+        plt.xticks(rotation=90)
         plt.title(f"Plotting {vars[0]} by {vars[1]}")
         plt.suptitle("")
         path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
         plt.savefig(path)
 
-"""    # Grouped boxplots
-    # Fixation duration
-    sns.boxplot(
-        x=analysis["age group"],
-        y=analysis["fixation duration (s)"],
-        hue=analysis["gender"],
-    )
-    plt.xticks(rotation=90)
-    plt.show()
+    if "gender" in analysis.columns:
+        vars_list_group = [
+            ["fixation duration (s)", "age group"],
+            ["fixation duration (s)", "education"],
+            ["first fixation duration (s)", "age group"],
+            ["first fixation duration (s)", "education"],
+            ["last fixation duration (s)", "age group"],
+            ["last fixation duration (s)", "education"],
+            ["fixation frequency (hz)", "age group"],
+            ["fixation frequency (hz)", "education"],
+            ["saccade duration(s)", "age group"],
+            ["saccade duration(s)", "education"],
+            ["saccade distance (px)", "age group"],
+            ["saccade distance (px)", "education"],
+            ["saccade frequency (hz)", "age group"],
+            ["saccade frequency (hz)", "education"],
+        ]
 
-    sns.boxplot(
-        x=analysis["education"],
-        y=analysis["fixation duration (s)"],
-        hue=analysis["gender"],
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # First fixation duration
-    sns.boxplot(
-        x=analysis["age group"], y=analysis["first fixation duration (s)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"], y=analysis["first fixation duration (s)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Last fixation duration
-    sns.boxplot(
-        x=analysis["age group"], y=analysis["last fixation duration (s)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"], y=analysis["last fixation duration (s)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Fixation frequency
-    sns.boxplot(
-        x=analysis["age group"], y=analysis["fixation frequency (hz)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"], y=analysis["fixation frequency (hz)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Saccade duration
-    sns.boxplot(
-        x=analysis["age group"],
-        y=analysis["saccade duration(s)"],
-        hue=analysis["gender"],
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"],
-        y=analysis["saccade duration(s)"],
-        hue=analysis["gender"],
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Saccade distance
-    sns.boxplot(
-        x=analysis["age group"], y=analysis["saccade distance (px)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"], y=analysis["saccade distance (px)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    # Saccade frequency
-    sns.boxplot(
-        x=analysis["age group"], y=analysis["saccade frequency (hz)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()
-
-    sns.boxplot(
-        x=analysis["education"], y=analysis["saccade frequency (hz)"], hue=analysis["gender"]
-    )
-    plt.xticks(rotation=90)
-    plt.show()"""
+        for vars in vars_list_group:
+            sns.boxplot(
+                x=analysis[f"{vars[1]}"],
+                y=analysis[f"{vars[0]}"],
+                hue=analysis["gender"],
+            )
+            plt.xticks(rotation=90)
+            plt.title(f"Plotting {vars[0]} by {vars[1]} (grouped by gender)")
+            path = os.path.join(
+                output_plots_folder_path, f"{vars[0]}_{vars[1]} by gender.png"
+            )
+            plt.savefig(path)
