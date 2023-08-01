@@ -154,6 +154,7 @@ try:
 except AssertionError:
     print(f"Number of participants found: {participant_count}")
     print(f"Number of folders found: {len(participant_list)}")
+    print(f"Participants unable to be processed : {no_gaze_csv}")
     print(f"Participant count does not match number of folders")
 
     with open(
