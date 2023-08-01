@@ -84,12 +84,12 @@ usable_participants = yes_fixations.loc[:, "participant_folder"].to_list()
 
 if len(null_participants) > 0:
     print(
-        f"There are {len(null_participants)} participants that do not have any fixations."
+        f"There are {len(null_participants)} participants that do not have registered fixation IDs."
     )
 
     with open(os.path.join(output_folder_path, "error_participants.txt"), "w") as f:
         f.write(
-            "These are the list of participants in the final csv without fixations: \n"
+            "These are the list of participants in the final csv without fixation IDs: \n"
         )
         for participant in null_participants:
             f.write(participant + "\n")
@@ -101,7 +101,37 @@ if len(null_participants) > 0:
         for participant in usable_participants:
             f.write(participant + "\n")
 
+# Checking for fixations in participants who don't have registered fixation IDs
+gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
+gaze_null.drop("row_number", axis=1, inplace=True)
 
+qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
+qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
+qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
+qualify["distance"] = np.sqrt((qualify["change_x"] ** 2) + (qualify["change_y"] ** 2))
+qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
+qualify["angle(r)"] = qualify.apply(
+    lambda x: math.atan2(x.change_y, x.change_x), axis=1
+)
+qualify = qualify[["participant_folder", "velocity", "angle(r)"]]
+qualify["angle(r)"] = qualify["angle(r)"].apply(abs)
+qualify["fixation"] = np.where(
+    (qualify["velocity"] < 900.0) & (qualify["angle(r)"] < 1.5), True, False
+)
+
+not_null = qualify[qualify["fixation"] == True]
+not_null_participants = not_null["participant_folder"]
+if len(not_null_participants) > 0:
+    not_null.to_excel(
+        os.path.join(
+            output_folder_path, "qualified participants without fixation IDs.xlsx"
+        )
+    )
+    print(
+        f"There are {len(not_null_participants)} participants who have gaze points that qualify for fixations, but do not have registered fixation IDs."
+    )
+
+# Create cleaned dataframe
 gaze_fixed = gaze_copy[~gaze_copy["participant_folder"].isin(null_participants)]
 gaze_fixed["time elapsed(s)"] = gaze_fixed.groupby("participant_folder")[
     "duration"
@@ -682,19 +712,4 @@ if env_var.DEMOGRAPHICS:
         x=analysis["education"], y=analysis["saccade frequency (hz)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
-    plt.show()
-
-    # Checking for fixations in participants who don't have registered fixation IDs
-    gaze_null = gaze_copy[gaze_copy["participant_folder"].isin(null_participants)]
-    gaze_null.drop("row_number", axis=1, inplace=True)
-
-    qualify = gaze_null[gaze_null["gaze duration(s)"] > 0.06]
-    qualify["change_x"] = qualify["next x"] - qualify["gaze x [px]"]
-    qualify["change_y"] = qualify["next y"] - qualify["gaze y [px]"]
-    qualify["distance"] = np.sqrt(
-        (qualify["change_x"] ** 2) + (qualify["change_y"] ** 2)
-    )
-    qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
-    qualify["angle(r)"] = qualify.apply(
-        lambda x: math.atan2(x.change_y, x.change_x), axis=1
-    )"""
+    plt.show()"""
