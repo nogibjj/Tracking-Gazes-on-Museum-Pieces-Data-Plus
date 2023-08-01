@@ -654,6 +654,7 @@ if env_var.DEMOGRAPHICS:
                 path = os.path.join(
                     output_plots_folder_path, f"{vars[0]}_{vars[1]} by gender.png"
                 )
+                plt.show()
                 plt.savefig(path)
             except:
                 # when they lack a certain demographic variable
