@@ -376,7 +376,7 @@ common_seq.columns = ["participant_folder", "sequence", "count"]
 # Putting together cumulative analysis dataframe
 analysis = fix_mean.reset_index()
 analysis["fixation frequency (hz)"] = fix_per_sec_mean["fixation frequency (hz)"]
-analysis["most fixated tag"] = most_fix_tag["tag"]
+analysis["most fixated feature"] = most_fix_tag["tag"]
 analysis["first fixation"] = first["tag"]
 analysis["first fixation duration (s)"] = first["fixation duration (s)"]
 analysis["last fixation"] = last["tag"]
