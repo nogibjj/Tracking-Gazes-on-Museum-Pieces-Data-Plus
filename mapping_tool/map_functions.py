@@ -11,6 +11,15 @@ import math
 
 def ref_coordinate_processing(gaze_reference_df):
     """Process the reference coordinates into a tuple"""
+
+    # remove rows with nan values in the ref_center_x and ref_center_y columns
+
+    gaze_reference_df = (
+        gaze_reference_df.dropna(subset=["ref_center_x", "ref_center_y"])
+        .reset_index(drop=True)
+        .copy()
+    )
+
     gaze_reference_df["ref_coordinates"] = pd.Series(
         zip(gaze_reference_df["ref_center_x"], gaze_reference_df["ref_center_y"])
     )
