@@ -10,6 +10,7 @@ class base_class:
 
     REFERENCE_IMAGE = True  # Flag indicating if reference image is manually found
     DEMOGRAPHICS = True  # User provides demographics data
+    AGE_GROUP_BINS = 6  # Number of bins for age groups
 
     ART_PIECE = "vulci_site"  # Name of the art piece/folder where the data is kept
 
