@@ -237,9 +237,13 @@ sac_per_sec = (
     .apply(lambda x: x[x.str.contains("saccade")].count())
     .to_frame()
 )
-sac_per_sec = sac_per_sec.rename({"fixation id": "saccade freq"}, axis=1).reset_index()
+sac_per_sec = sac_per_sec.rename(
+    {"fixation id": "saccade frequency (hz)"}, axis=1
+).reset_index()
 sac_per_sec_mean = (
-    sac_per_sec.groupby("participant_folder")["saccade freq"].mean().to_frame()
+    sac_per_sec.groupby("participant_folder")["saccade frequency (hz)"]
+    .mean()
+    .to_frame()
 )
 sac_per_sec_mean.reset_index(inplace=True)
 
@@ -275,7 +279,7 @@ fix_durations = gaze_fixation.groupby(["participant_folder", "fixation id"])[
 ].sum()
 fix_durations = fix_durations.to_frame()
 fix_durations = fix_durations.rename(
-    {"gaze duration(s)": "fixation duration(s)"}, axis=1
+    {"gaze duration(s)": "fixation duration (s)"}, axis=1
 )
 fix_durations.reset_index(inplace=True)
 gaze_fixation = pd.merge(
@@ -286,11 +290,11 @@ gaze_fixation = pd.merge(
     how="left",
 )
 
-fix_mean = fix_durations.groupby(["participant_folder"])["fixation duration(s)"].mean()
+fix_mean = fix_durations.groupby(["participant_folder"])["fixation duration (s)"].mean()
 fix_mean = fix_mean.to_frame()
-fix_mean = fix_mean.rename({"fixation duration(s)": "mean fix duration(s)"}, axis=1)
+fix_mean = fix_mean.rename({"fixation duration (s)": "fixation duration (s)"}, axis=1)
 
-overall_mean = fix_mean["mean fix duration(s)"].mean()
+overall_mean = fix_mean["fixation duration (s)"].mean()
 
 # Fixations per second for each participant
 fix_per_time = gaze_fixed[
@@ -304,9 +308,13 @@ fix_per_sec = (
     .nunique()
     .to_frame()
 )
-fix_per_sec = fix_per_sec.rename({"fixation id": "fixation freq"}, axis=1).reset_index()
+fix_per_sec = fix_per_sec.rename(
+    {"fixation id": "fixation frequency (hz)"}, axis=1
+).reset_index()
 fix_per_sec_mean = (
-    fix_per_sec.groupby("participant_folder")["fixation freq"].mean().to_frame()
+    fix_per_sec.groupby("participant_folder")["fixation frequency (hz)"]
+    .mean()
+    .to_frame()
 )
 fix_per_sec_mean.reset_index(inplace=True)
 
@@ -329,11 +337,11 @@ tag_fix_avg = tag_fix.groupby("tag")["gaze duration(s)"].mean()
 g = gaze_fixation.groupby("participant_folder")
 
 first = pd.concat([g.head(1)]).sort_values("participant_folder")
-first = first[["participant_folder", "tag", "fixation duration(s)"]]
+first = first[["participant_folder", "tag", "fixation duration (s)"]]
 first.reset_index(inplace=True)
 
 last = pd.concat([g.tail(1)]).sort_values("participant_folder")
-last = last[["participant_folder", "tag", "fixation duration(s)"]]
+last = last[["participant_folder", "tag", "fixation duration (s)"]]
 last.reset_index(inplace=True)
 
 
@@ -367,16 +375,16 @@ common_seq.columns = ["participant_folder", "sequence", "count"]
 
 # Putting together cumulative analysis dataframe
 analysis = fix_mean.reset_index()
-analysis["fixation freq"] = fix_per_sec_mean["fixation freq"]
+analysis["fixation frequency (hz)"] = fix_per_sec_mean["fixation frequency (hz)"]
 analysis["most fixated tag"] = most_fix_tag["tag"]
 analysis["first fixation"] = first["tag"]
-analysis["first fix time"] = first["fixation duration(s)"]
+analysis["first fixation duration (s)"] = first["fixation duration (s)"]
 analysis["last fixation"] = last["tag"]
-analysis["last fix time"] = last["fixation duration(s)"]
-analysis["mean sac duration(s)"] = sac_dur_mean["saccade duration(s)"]
-analysis["mean sac distance"] = sac_distance_mean["saccade distance"]
+analysis["last fixation duration (s)"] = last["fixation duration (s)"]
+analysis["saccade duration(s)"] = sac_dur_mean["saccade duration(s)"]
+analysis["saccade distance (px)"] = sac_distance_mean["saccade distance"]
 analysis["mode sac direction"] = direction_mode["saccade direction"]
-analysis["saccade freq"] = sac_per_sec_mean["saccade freq"]
+analysis["saccade frequency (hz)"] = sac_per_sec_mean["saccade frequency (hz)"]
 analysis["most common sequence"] = common_seq["sequence"]
 analysis["sequence count"] = common_seq["count"]
 analysis.to_excel(os.path.join(output_folder_path, "analysis.xlsx"))
@@ -384,13 +392,13 @@ analysis.to_excel(os.path.join(output_folder_path, "analysis.xlsx"))
 # Overall averages for numerical data
 numerical_mean = analysis[
     [
-        "mean fix duration(s)",
-        "fixation freq",
-        "first fix time",
-        "last fix time",
-        "mean sac duration(s)",
-        "mean sac distance",
-        "saccade freq",
+        "fixation duration (s)",
+        "fixation frequency (hz)",
+        "first fixation duration (s)",
+        "last fixation duration (s)",
+        "saccade duration(s)",
+        "saccade distance (px)",
+        "saccade frequency (hz)",
     ]
 ]
 numerical_mean = numerical_mean.mean().to_frame()
@@ -461,57 +469,108 @@ if env_var.DEMOGRAPHICS:
 
     # Age
     if "age group" in analysis.columns:
-        fix_dur_age = analysis.groupby("age group")["mean fix duration(s)"].mean()
-        fix_per_sec_age = analysis.groupby("age group")["fixation freq"].mean()
-        first_fix_dur_age = analysis.groupby("age group")["first fix time"].mean()
-        last_fix_dur_age = analysis.groupby("age group")["last fix time"].mean()
-        sac_dur_age = analysis.groupby("age group")["mean sac duration(s)"].mean()
-        sac_dist_age = analysis.groupby("age group")["mean sac distance"].mean()
-        sac_per_sec_age = analysis.groupby("age group")["saccade freq"].mean()
+        fix_dur_age = analysis.groupby("age group")["fixation duration (s)"].mean()
+        fix_per_sec_age = analysis.groupby("age group")[
+            "fixation frequency (hz)"
+        ].mean()
+        first_fix_dur_age = analysis.groupby("age group")[
+            "first fixation duration (s)"
+        ].mean()
+        last_fix_dur_age = analysis.groupby("age group")[
+            "last fixation duration (s)"
+        ].mean()
+        sac_dur_age = analysis.groupby("age group")["saccade duration(s)"].mean()
+        sac_dist_age = analysis.groupby("age group")["saccade distance (px)"].mean()
+        sac_per_sec_age = analysis.groupby("age group")["saccade frequency (hz)"].mean()
+
+        age_data = fix_dur_age.to_frame()
+        age_data["fixation frequency (hz)"] = fix_per_sec_age
+        age_data["first fixation duration (s)"] = first_fix_dur_age
+        age_data["last fixation duration (s)"] = last_fix_dur_age
+        age_data["saccade duration (s)"] = sac_dur_age
+        age_data["saccade distance (px)"] = sac_dist_age
+        age_data["saccade frequency (hz)"] = sac_per_sec_age
+        age_data.to_excel(
+            os.path.join(output_folder_path, "numerical data by age.xlsx")
+        )
 
     # Education
     if "education" in analysis.columns:
-        fix_dur_edu = analysis.groupby("education")["mean fix duration(s)"].mean()
-        fix_per_sec_edu = analysis.groupby("education")["fixation freq"].mean()
-        first_fix_dur_edu = analysis.groupby("education")["first fix time"].mean()
-        last_fix_dur_edu = analysis.groupby("education")["last fix time"].mean()
-        sac_dur_edu = analysis.groupby("education")["mean sac duration(s)"].mean()
-        sac_dist_edu = analysis.groupby("education")["mean sac distance"].mean()
-        sac_per_sec_edu = analysis.groupby("education")["saccade freq"].mean()
+        fix_dur_edu = analysis.groupby("education")["fixation duration (s)"].mean()
+        fix_per_sec_edu = analysis.groupby("education")[
+            "fixation frequency (hz)"
+        ].mean()
+        first_fix_dur_edu = analysis.groupby("education")[
+            "first fixation duration (s)"
+        ].mean()
+        last_fix_dur_edu = analysis.groupby("education")[
+            "last fixation duration (s)"
+        ].mean()
+        sac_dur_edu = analysis.groupby("education")["saccade duration(s)"].mean()
+        sac_dist_edu = analysis.groupby("education")["saccade distance (px)"].mean()
+        sac_per_sec_edu = analysis.groupby("education")["saccade frequency (hz)"].mean()
+
+        education_data = fix_dur_edu.to_frame()
+        education_data["fixation frequency (hz)"] = fix_per_sec_edu
+        education_data["first fixation duration (s)"] = first_fix_dur_edu
+        education_data["last fixation duration (s)"] = last_fix_dur_edu
+        education_data["saccade duration (s)"] = sac_dur_edu
+        education_data["saccade distance (px)"] = sac_dist_edu
+        education_data["saccade frequency (hz)"] = sac_per_sec_edu
+        education_data.to_excel(
+            os.path.join(output_folder_path, "numerical data by eduation.xlsx")
+        )
 
     # Gender
     if "gender" in analysis.columns:
-        fix_dur_gender = analysis.groupby("gender")["mean fix duration(s)"].mean()
-        fix_per_sec_gender = analysis.groupby("gender")["fixation freq"].mean()
-        first_fix_dur_gender = analysis.groupby("gender")["first fix time"].mean()
-        last_fix_dur_gender = analysis.groupby("gender")["last fix time"].mean()
-        sac_dur_gender = analysis.groupby("gender")["mean sac duration(s)"].mean()
-        sac_dist_gender = analysis.groupby("gender")["mean sac distance"].mean()
-        sac_per_sec_gender = analysis.groupby("gender")["saccade freq"].mean()
+        fix_dur_gender = analysis.groupby("gender")["fixation duration (s)"].mean()
+        fix_per_sec_gender = analysis.groupby("gender")[
+            "fixation frequency (hz)"
+        ].mean()
+        first_fix_dur_gender = analysis.groupby("gender")[
+            "first fixation duration (s)"
+        ].mean()
+        last_fix_dur_gender = analysis.groupby("gender")[
+            "last fixation duration (s)"
+        ].mean()
+        sac_dur_gender = analysis.groupby("gender")["saccade duration(s)"].mean()
+        sac_dist_gender = analysis.groupby("gender")["saccade distance (px)"].mean()
+        sac_per_sec_gender = analysis.groupby("gender")["saccade frequency (hz)"].mean()
+
+        gender_data = fix_dur_gender.to_frame()
+        gender_data["fixation frequency (hz)"] = fix_per_sec_gender
+        gender_data["first fixation duration (s)"] = first_fix_dur_gender
+        gender_data["last fixation duration (s)"] = last_fix_dur_gender
+        gender_data["saccade duration (s)"] = sac_dur_gender
+        gender_data["saccade distance (px)"] = sac_dist_gender
+        gender_data["saccade frequency (hz)"] = sac_per_sec_gender
+        gender_data.to_excel(
+            os.path.join(output_folder_path, "numerical data by gender.xlsx")
+        )
 
     # Demographic visualizations (boxplots)
     vars_list = [
-        ["mean fix duration(s)", "age group"],
-        ["mean fix duration(s)", "education"],
-        ["mean fix duration(s)", "gender"],
-        ["first fix time", "age group"],
-        ["first fix time", "education"],
-        ["first fix time", "gender"],
-        ["last fix time", "age group"],
-        ["last fix time", "education"],
-        ["last fix time", "gender"],
-        ["fixation freq", "age group"],
-        ["fixation freq", "education"],
-        ["fixation freq", "gender"],
-        ["mean sac duration(s)", "age group"],
-        ["mean sac duration(s)", "education"],
-        ["mean sac duration(s)", "gender"],
-        ["mean sac distance", "age group"],
-        ["mean sac distance", "education"],
-        ["mean sac distance", "gender"],
-        ["saccade freq", "age group"],
-        ["saccade freq", "education"],
-        ["saccade freq", "gender"],
+        ["fixation duration (s)", "age group"],
+        ["fixation duration (s)", "education"],
+        ["fixation duration (s)", "gender"],
+        ["first fixation duration (s)", "age group"],
+        ["first fixation duration (s)", "education"],
+        ["first fixation duration (s)", "gender"],
+        ["last fixation duration (s)", "age group"],
+        ["last fixation duration (s)", "education"],
+        ["last fixation duration (s)", "gender"],
+        ["fixation frequency (hz)", "age group"],
+        ["fixation frequency (hz)", "education"],
+        ["fixation frequency (hz)", "gender"],
+        ["saccade duration(s)", "age group"],
+        ["saccade duration(s)", "education"],
+        ["saccade duration(s)", "gender"],
+        ["saccade distance (px)", "age group"],
+        ["saccade distance (px)", "education"],
+        ["saccade distance (px)", "gender"],
+        ["saccade frequency (hz)", "age group"],
+        ["saccade frequency (hz)", "education"],
+        ["saccade frequency (hz)", "gender"],
     ]
 
     for vars in vars_list:
@@ -521,14 +580,13 @@ if env_var.DEMOGRAPHICS:
         plt.title(f"Plotting {vars[0]} by {vars[1]}")
         plt.suptitle("")
         path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
-        print(path)
         plt.savefig(path)
 
-    # Grouped boxplots
+"""    # Grouped boxplots
     # Fixation duration
     sns.boxplot(
         x=analysis["age group"],
-        y=analysis["mean fix duration(s)"],
+        y=analysis["fixation duration (s)"],
         hue=analysis["gender"],
     )
     plt.xticks(rotation=90)
@@ -536,7 +594,7 @@ if env_var.DEMOGRAPHICS:
 
     sns.boxplot(
         x=analysis["education"],
-        y=analysis["mean fix duration(s)"],
+        y=analysis["fixation duration (s)"],
         hue=analysis["gender"],
     )
     plt.xticks(rotation=90)
@@ -544,39 +602,39 @@ if env_var.DEMOGRAPHICS:
 
     # First fixation duration
     sns.boxplot(
-        x=analysis["age group"], y=analysis["first fix time"], hue=analysis["gender"]
+        x=analysis["age group"], y=analysis["first fixation duration (s)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     sns.boxplot(
-        x=analysis["education"], y=analysis["first fix time"], hue=analysis["gender"]
+        x=analysis["education"], y=analysis["first fixation duration (s)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     # Last fixation duration
     sns.boxplot(
-        x=analysis["age group"], y=analysis["last fix time"], hue=analysis["gender"]
+        x=analysis["age group"], y=analysis["last fixation duration (s)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     sns.boxplot(
-        x=analysis["education"], y=analysis["last fix time"], hue=analysis["gender"]
+        x=analysis["education"], y=analysis["last fixation duration (s)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     # Fixation frequency
     sns.boxplot(
-        x=analysis["age group"], y=analysis["fixation freq"], hue=analysis["gender"]
+        x=analysis["age group"], y=analysis["fixation frequency (hz)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     sns.boxplot(
-        x=analysis["education"], y=analysis["fixation freq"], hue=analysis["gender"]
+        x=analysis["education"], y=analysis["fixation frequency (hz)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
@@ -584,7 +642,7 @@ if env_var.DEMOGRAPHICS:
     # Saccade duration
     sns.boxplot(
         x=analysis["age group"],
-        y=analysis["mean sac duration(s)"],
+        y=analysis["saccade duration(s)"],
         hue=analysis["gender"],
     )
     plt.xticks(rotation=90)
@@ -592,7 +650,7 @@ if env_var.DEMOGRAPHICS:
 
     sns.boxplot(
         x=analysis["education"],
-        y=analysis["mean sac duration(s)"],
+        y=analysis["saccade duration(s)"],
         hue=analysis["gender"],
     )
     plt.xticks(rotation=90)
@@ -600,26 +658,26 @@ if env_var.DEMOGRAPHICS:
 
     # Saccade distance
     sns.boxplot(
-        x=analysis["age group"], y=analysis["mean sac distance"], hue=analysis["gender"]
+        x=analysis["age group"], y=analysis["saccade distance (px)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     sns.boxplot(
-        x=analysis["education"], y=analysis["mean sac distance"], hue=analysis["gender"]
+        x=analysis["education"], y=analysis["saccade distance (px)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     # Saccade frequency
     sns.boxplot(
-        x=analysis["age group"], y=analysis["saccade freq"], hue=analysis["gender"]
+        x=analysis["age group"], y=analysis["saccade frequency (hz)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
 
     sns.boxplot(
-        x=analysis["education"], y=analysis["saccade freq"], hue=analysis["gender"]
+        x=analysis["education"], y=analysis["saccade frequency (hz)"], hue=analysis["gender"]
     )
     plt.xticks(rotation=90)
     plt.show()
@@ -637,4 +695,4 @@ if env_var.DEMOGRAPHICS:
     qualify["velocity"] = qualify["distance"] / qualify["gaze duration(s)"]
     qualify["angle(r)"] = qualify.apply(
         lambda x: math.atan2(x.change_y, x.change_x), axis=1
-    )
+    )"""
