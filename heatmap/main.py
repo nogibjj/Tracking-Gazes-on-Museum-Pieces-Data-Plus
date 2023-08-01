@@ -24,8 +24,8 @@ from functions import (
     draw_heatmap_on_ref_img,
     save_outputs,
     reference_gaze_point_mapper,
-    is_single_color,
 )
+from create_reference_image.functions import is_single_color
 import matplotlib.pyplot as plt
 from helper_functions.timestamp_helper import convert_timestamp_ns_to_ms
 from config.config import *
