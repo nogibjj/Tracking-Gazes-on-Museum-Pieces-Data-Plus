@@ -109,6 +109,8 @@ for index, folder in enumerate(sorted(os.listdir(data_folder_path))):
         # the color frame is for visualization purposes
         reference_frame_dict[index] = ref_image
         reference_frame_gray_dict[index] = ref_image_grey
+        end_time = time.time()
+        print(f"Time taken for {folder} is {end_time - start_time}")
 
 # choose the best frame
 

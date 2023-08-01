@@ -8,7 +8,7 @@ class base_class:
     DRAW_BOUNDING_SIZE = 3  # Radius of the circle for the bounding box on the heatmap
     RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
 
-    REFERENCE_IMAGE = True  # Flag indicating if reference image is manually found
+    REFERENCE_IMAGE = False  # Flag indicating if reference image is manually found
     DEMOGRAPHICS = True  # User provides demographics data
     AGE_GROUP_BINS = 6  # Number of bins for age groups
 
