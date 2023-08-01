@@ -9,10 +9,10 @@ class base_class:
     RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
 
     REFERENCE_IMAGE = True  # Flag indicating if reference image is manually found
-    DEMOGRAPHICS = True  # User provides demographics data
+    DEMOGRAPHICS = False  # User provides demographics data
     AGE_GROUP_BINS = 6  # Number of bins for age groups
 
-    ART_PIECE = "truscan_demo"  # Name of the art piece/folder where the data is kept
+    ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
 
 
 class aditya_config(base_class):
