@@ -50,7 +50,7 @@ if not os.path.exists(output_folder_path):
     os.makedirs(output_folder_path)
 
 for index, folder in enumerate(sorted(os.listdir(output_folder_path))):
-    print(f"Starting folder {index} : {folder}")
+    print(f"Starting mapping for folder {index} : {folder}")
     try:
         files = os.listdir(os.path.join(output_folder_path, folder))
     except:
@@ -121,7 +121,7 @@ for folder in sorted(os.listdir(output_folder_path)):
         no_gaze_csv.append(folder)
         continue
 
-    print(f"file found in Processing {folder}")
+    print(f"Final gaze csv found in {folder}, combining now...")
     participant_count += 1
 
     gaze_csv["participant_folder"] = folder.split(os.sep)[-1]
