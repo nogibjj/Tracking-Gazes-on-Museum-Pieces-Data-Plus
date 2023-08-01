@@ -461,6 +461,7 @@ plt.title("Fixation Duration by Feature (All Participants)")
 plt.suptitle("")
 plt.savefig(os.path.join(output_plots_folder_path, "time spent on each feature.png"))
 plt.show()
+plt.close()
 
 # Frequency of a tag being the first fixation
 first_fix_plot = analysis["first fixation"].value_counts().to_frame().reset_index()
