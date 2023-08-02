@@ -32,11 +32,6 @@ class april_config(base_class):
     OUTPUT_PATH = "/Users/aprilzuo/Desktop/Duke/Research/Data+/user_output"
 
 
-class demo_config(base_class):
-    ROOT_PATH = "../demo_data"
-    OUTPUT_PATH = "../demo_output"
-
-
 # User, please uncomment the following lines and add your own paths
 # class user_config(base_class):
 #     ROOT_PATH = "PUT YOUR ROOT PATH HERE"
