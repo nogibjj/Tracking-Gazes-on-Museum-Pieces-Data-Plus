@@ -464,9 +464,11 @@ plt.xlabel("Duration (s)")
 plt.ylabel("Feature")
 plt.title("Fixation Duration by Feature (All Participants)")
 plt.suptitle("")
-plt.savefig(os.path.join(output_plots_folder_path, "time spent on each feature.png"))
-plt.show()
-plt.close()
+plt.savefig(
+    os.path.join(output_plots_folder_path, "time spent on each feature.png"),
+    bbox_inches="tight",
+)
+plt.clf()
 
 # Frequency of a tag being the first fixation
 first_fix_plot = analysis["first fixation"].value_counts().to_frame().reset_index()
@@ -474,8 +476,11 @@ plt.barh(first_fix_plot["first fixation"], first_fix_plot["count"])
 plt.xlabel("Count")
 plt.ylabel("Feature")
 plt.title("No. of Times a Feature was the First Fixation")
-plt.savefig(os.path.join(output_plots_folder_path, "first fixation features.png"))
-plt.show()
+plt.savefig(
+    os.path.join(output_plots_folder_path, "first fixation features.png"),
+    bbox_inches="tight",
+)
+plt.clf()
 
 # Frequency of a tag being the last fixation
 last_fix_plot = analysis["last fixation"].value_counts().to_frame().reset_index()
@@ -483,8 +488,11 @@ plt.barh(last_fix_plot["last fixation"], last_fix_plot["count"])
 plt.xlabel("Count")
 plt.ylabel("Feature")
 plt.title("No. of Times a Feature was the Last Fixation")
-plt.savefig(os.path.join(output_plots_folder_path, "last fixation features.png"))
-plt.show()
+plt.savefig(
+    os.path.join(output_plots_folder_path, "last fixation features.png"),
+    bbox_inches="tight",
+)
+plt.clf()
 
 # Demographics
 if env_var.DEMOGRAPHICS:
@@ -620,11 +628,11 @@ if env_var.DEMOGRAPHICS:
             analysis.boxplot(column=vars[0], by=vars[1])
             plt.xlabel(vars[0])
             plt.ylabel(vars[1])
-            plt.xticks(rotation=90)
+            plt.xticks(rotation=25, ha="right")
             plt.title(f"Plotting {vars[0]} by {vars[1]}")
             plt.suptitle("")
             path = os.path.join(output_plots_folder_path, f"{vars[0]}_{vars[1]}.png")
-            plt.savefig(path)
+            plt.savefig(path, bbox_inches="tight")
         except:
             # when they lack a certain demographic variable
             print(f"{vars} not found in demographic data")
@@ -655,13 +663,13 @@ if env_var.DEMOGRAPHICS:
                     y=analysis[f"{vars[0]}"],
                     hue=analysis["gender"],
                 )
-                plt.xticks(rotation=90)
+                plt.xticks(rotation=25, ha="right")
                 plt.title(f"Plotting {vars[0]} by {vars[1]} (grouped by gender)")
                 path = os.path.join(
                     output_plots_folder_path, f"{vars[0]}_{vars[1]} by gender.png"
                 )
-                plt.show()
-                plt.savefig(path)
+                plt.savefig(path, bbox_inches="tight")
+                plt.clf()
             except:
                 # when they lack a certain demographic variable
                 print(f"{vars} not found in demographic data")
