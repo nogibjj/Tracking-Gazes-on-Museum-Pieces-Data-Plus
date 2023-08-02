@@ -12,7 +12,7 @@ import os
 import glob
 import traceback
 
-
+print("Starting Scan Path and Video Plotting Scripts...")
 # prepend parent directory to the system path:
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, path)
@@ -31,7 +31,6 @@ ref_image = cv2.imread(
     os.path.join(env_var.ROOT_PATH, env_var.ART_PIECE, "reference_image.png")
 )
 width, height = ref_image.shape[0], ref_image.shape[1]
-print("Starting Scan Path and Video Plotting Scripts...")
 for index, folder in enumerate(os.listdir(output_folder_path)):
     folder = os.path.join(output_folder_path, folder)
     if not os.path.isdir(folder):
