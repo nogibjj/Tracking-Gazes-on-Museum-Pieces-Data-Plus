@@ -58,3 +58,11 @@ We have utilized a wide array of image processing and statistical techniques to 
     - To run individual scripts (the same patterns follow for all)
         - cd heatmap [or the other functions]
         - python main.py $user
+
+# Optional : Quality Control Mechanisms
+
+3. **Quality Control**
+
+    - Scan Path Visualizations serve as a means for comparing Pupil Invisible's implementation and our implementation. With more similarity across the plotting of gaze points, the more confidence we have in our implementation.
+
+    - The quality control folder has a means for testing the reference image. At this point, it shows the difference in MSE between a sample of frames and the extracted reference frame from the video. 
