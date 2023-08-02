@@ -15,8 +15,7 @@ python main.py $user
 
 # Run the Scanpath Visualisations
 cd ../scanpath_visualization
-python ref_image_plotting.py $user
-python video_plotting.py $user
+python main.py
 
 ### Run mapper and grouper script
 cd ../mapping_tool
