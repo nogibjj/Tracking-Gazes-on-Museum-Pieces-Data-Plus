@@ -22,7 +22,6 @@ import warnings
 warnings.filterwarnings("ignore")
 plt.style.use("ggplot")
 
-
 # Set env variables based on config file
 try:
     env = sys.argv[1]
@@ -50,11 +49,6 @@ output_plots_folder_path = os.path.join(env_var.OUTPUT_PATH, env_var.ART_PIECE, 
 
 if not os.path.exists(output_plots_folder_path):
     os.makedirs(output_plots_folder_path)
-
-print(
-    f"Is all gaze here? {os.path.isfile(os.path.join(output_folder_path, 'all_gaze.csv'))}"
-)
-print(os.path.join(output_folder_path, "all_gaze.csv"))
 
 gaze_copy = pd.read_csv(
     os.path.join(output_folder_path, "all_gaze.csv"), compression="gzip"

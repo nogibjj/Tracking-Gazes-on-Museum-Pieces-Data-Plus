@@ -9,7 +9,7 @@ class base_class:
     RESAMPLE = False  # Resample (from ns to ms) or choose the closest row
 
     REFERENCE_IMAGE = True  # Flag indicating if reference image is manually found
-    DEMOGRAPHICS = False  # User provides demographics data
+    DEMOGRAPHICS = True  # User provides demographics data
     AGE_GROUP_BINS = 6  # Number of bins for age groups
 
     ART_PIECE = "truscan_statue"  # Name of the art piece/folder where the data is kept
